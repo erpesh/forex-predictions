@@ -1,8 +1,7 @@
 from model.train import train_lstm_model
 
 if __name__ == "__main__":
-    # Train the LSTM model for EUR/USD data
-    print("Training LSTM model for EUR/USD...")
+    print("Training LSTM model...")
     train_lstm_model()
 
 

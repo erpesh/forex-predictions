@@ -1,21 +1,46 @@
 import pandas as pd
 import numpy as np
+import os
 from sklearn.preprocessing import MinMaxScaler
+import joblib
 
-# Load data
-def load_data(file_path):
-    data = pd.read_csv(file_path, sep='\t')
-    data['Time'] = pd.to_datetime(data['Time'], errors='coerce')
-    data.set_index('Time', inplace=True)
-    data.sort_index(inplace=True)
-    return data
+def load_data(data_directory):
+    data_list = []
+    print('data loaded asdfadfasfasf')
+    # Walk through all subdirectories and files in the 'data' directory
+    for timeframe in ['MT_D1']:
+        timeframe_folder = os.path.join(data_directory, timeframe)
+        
+        for file_name in os.listdir(timeframe_folder):
+            if file_name.endswith('.csv'):
+                file_path = os.path.join(timeframe_folder, file_name)
+                
+                columns = ['Time', 'Open', 'High', 'Low', 'Close', 'Volume']
 
-# Fill missing values
+                data = pd.read_csv(file_path, header=None, names=columns, sep=',')
+
+                data['Time'] = pd.to_datetime(data['Time'], errors='coerce')
+
+                data.set_index('Time', inplace=True)
+                data.sort_index(inplace=True)
+
+                currency_pair = file_name.split('_')[0]
+                data['Currency'] = currency_pair
+                data['Timeframe'] = timeframe
+
+                data_list.append(data)
+                # Only load one file for now
+                break
+    
+    combined_data = pd.concat(data_list)
+    print("Combined data head:", combined_data.head())  # Debug
+    return combined_data
+
 def fill_missing_values(data):
     data.fillna(method='ffill', inplace=True)
     return data
 
-# Calculate RSI
+# Calculate RSI (Relative Strength Index)
 def calculate_rsi(data, window=14):
     delta = data['Close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
@@ -24,7 +49,7 @@ def calculate_rsi(data, window=14):
     rsi = 100 - (100 / (1 + rs))
     return rsi
 
-# Calculate MACD
+# Calculate MACD (Moving Average Convergence Divergence)
 def calculate_macd(data, fast_period=12, slow_period=26, signal_period=9):
     fast_ema = data['Close'].ewm(span=fast_period, min_periods=fast_period).mean()
     slow_ema = data['Close'].ewm(span=slow_period, min_periods=slow_period).mean()
@@ -33,43 +58,66 @@ def calculate_macd(data, fast_period=12, slow_period=26, signal_period=9):
     histogram = macd_line - signal_line
     return macd_line, signal_line, histogram
 
-# Add technical indicators
+# Add technical indicators to the data (RSI, MACD)
 def add_technical_indicators(data):
     data['RSI'] = calculate_rsi(data, window=14)
     data['MACD'], data['Signal_Line'], data['Histogram'] = calculate_macd(data)
     data.dropna(inplace=True)  # Drop rows with NaN values
     return data
 
-# Normalize data
+# Normalize the data using MinMaxScaler
 def normalize_data(data):
     scaler = MinMaxScaler()
     data_scaled = scaler.fit_transform(data[['Open', 'High', 'Low', 'Close', 'Volume', 'RSI', 'MACD', 'Signal_Line', 'Histogram']])
     data_normalized = pd.DataFrame(data_scaled, columns=['Open', 'High', 'Low', 'Close', 'Volume', 'RSI', 'MACD', 'Signal_Line', 'Histogram'], index=data.index)
+    
+    joblib.dump(scaler, 'scaler_aud.pkl') # Save the scaler for later use
+    
     return data_normalized, scaler
 
-# Create sequences
+# Create sequences for LSTM (with a sliding window approach)
+import time
+
 def create_sequences(data, seq_length=30):
     sequences = []
     labels = []
-    for i in range(len(data) - seq_length):
+    total_rows = len(data) - seq_length
+    start_time = time.time()
+    
+    for i in range(total_rows):
         seq = data.iloc[i:i+seq_length][['Open', 'High', 'Low', 'Close', 'Volume', 'RSI', 'MACD', 'Signal_Line', 'Histogram']].values
         label = data.iloc[i+seq_length]['Close']
+        
+        # Skip if any NaN is found
         if np.isnan(seq).any() or np.isnan(label):
             continue
+        
         sequences.append(seq)
         labels.append(label)
+        
+        # Print progress every 10,000 rows
+        if i % 10000 == 0:
+            elapsed_time = time.time() - start_time
+            print(f"Processed {i}/{total_rows} rows. Elapsed time: {elapsed_time:.2f} seconds.")
+    
+    print(f"Finished creating sequences. Total sequences: {len(sequences)}. Total time: {time.time() - start_time:.2f} seconds.")
     return np.array(sequences), np.array(labels)
 
-# Check for NaNs
-def check_for_nans(data):
-    print(data.isna().sum())
 
-# Preprocess data
-def preprocess_data(file_path, seq_length=30):
-    data = load_data(file_path)
+def preprocess_data(data_directory, seq_length=30):
+    data = load_data(data_directory)
+    print("Data loaded. Shape:", data.shape)  # Debug
+    
     data = fill_missing_values(data)
+    print("After filling missing values. Shape:", data.shape)  # Debug
+    
     data = add_technical_indicators(data)
+    print("After adding technical indicators. Shape:", data.shape)  # Debug
+    
     data_normalized, scaler = normalize_data(data)
-    check_for_nans(data_normalized)
+    print("After normalization. Shape:", data_normalized.shape)  # Debug
+    
     X, y = create_sequences(data_normalized, seq_length)
+    print("Sequences created. X shape:", X.shape, "y shape:", y.shape)  # Debug
+    
     return X, y, scaler
