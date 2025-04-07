@@ -28,12 +28,12 @@ class PredictionRequest(BaseModel):
     data: list[OHLCData]  # A list of OHLC data points
 
 # Load model and scaler dynamically based on currency pair
-def load_model_and_scaler(currency_pair: str):
+def load_model_and_scaler(currency_pair: str, period: str):
     if currency_pair not in SUPPORTED_PAIRS:
         raise ValueError(f"Unsupported currency pair: {currency_pair}. Supported pairs are: {SUPPORTED_PAIRS}")
 
-    model_path = os.path.join(MODELS_BASE_DIR, currency_pair, "model.keras")
-    scaler_path = os.path.join(MODELS_BASE_DIR, currency_pair, "scaler.pkl")
+    model_path = os.path.join(MODELS_BASE_DIR, currency_pair, period, "model.keras")
+    scaler_path = os.path.join(MODELS_BASE_DIR, currency_pair, period, "scaler.pkl")
 
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Model file not found for {currency_pair} at {model_path}")
@@ -98,8 +98,8 @@ def get_multiple_predictions(mock_sequences, model, scaler, num_predictions=5):
     return predictions
 
 # Prediction endpoint with currency pair as a path parameter
-@app.post("/predict/{currency_pair}")
-async def predict(currency_pair: str, data: PredictionRequest):
+@app.post("/predict/{currency_pair}/{period}")
+async def predict(currency_pair: str, period: str, data: PredictionRequest):
     try:
         # Validate currency pair
         currency_pair = currency_pair.upper()
@@ -107,7 +107,7 @@ async def predict(currency_pair: str, data: PredictionRequest):
             raise HTTPException(status_code=400, detail=f"Unsupported currency pair. Supported pairs are: {SUPPORTED_PAIRS}")
 
         # Load model and scaler for the specified currency pair
-        model, scaler = load_model_and_scaler(currency_pair)
+        model, scaler = load_model_and_scaler(currency_pair, period)
 
         # Convert input data to DataFrame
         data_dict = [item.dict() for item in data.data]

@@ -7,7 +7,6 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 import matplotlib.pyplot as plt
 import math
 
-
 data_directory = r'C:\disk\uni\project\data'
 
 # Load and preprocess data from the folder
@@ -19,9 +18,11 @@ kf = KFold(n_splits=5, shuffle=False)
 mse_scores = []
 rmse_scores = []
 mae_scores = []
+best_model = None
+best_model_score = float('inf')  # We will minimize this score
 
 # K-Fold Cross Validation
-for train_index, test_index in kf.split(X):
+for fold, (train_index, test_index) in enumerate(kf.split(X)):
     X_train, X_test = X[train_index], X[test_index]
     y_train, y_test = y[train_index], y[test_index]
     
@@ -46,17 +47,26 @@ for train_index, test_index in kf.split(X):
     rmse_scores.append(rmse)
     mae_scores.append(mae)
 
+    # Select the best model based on MSE, RMSE, or MAE
+    if mse < best_model_score:
+        best_model_score = mse
+        best_model = model
+        best_model_fold = fold  # Keep track of the fold
+    
+    # Plot predictions vs true values for each fold
     plt.figure(figsize=(12, 6))
     plt.plot(y_test_rescaled, color='blue', label='True Values')
     plt.plot(y_pred_rescaled, color='red', label='Predictions')
-    plt.title(f'True vs Predicted Close Prices (Fold {len(mse_scores)})')
+    plt.title(f'True vs Predicted Close Prices (Fold {fold + 1})')
     plt.xlabel('Time')
     plt.ylabel('Close Price')
     plt.legend()
     plt.show()
 
-    model.save(f'd1_fold_{len(mse_scores)}.keras')
-
 print(f'Average MSE: {np.mean(mse_scores)}')
 print(f'Average RMSE: {np.mean(rmse_scores)}')
 print(f'Average MAE: {np.mean(mae_scores)}')
+
+# Save the best model
+best_model.save(f'model.keras')
+print(f"Best Model is from Fold {best_model_fold + 1} with MSE: {best_model_score}")
