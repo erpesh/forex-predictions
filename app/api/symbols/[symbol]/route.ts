@@ -1,5 +1,19 @@
 import { NextResponse } from "next/server"
 
+interface OHLCV {
+  Open: number;
+  High: number;
+  Low: number;
+  Close: number;
+  Volume: number;
+}
+
+interface HistoricalDataPoint {
+  time: string; // YYYY-MM-DD
+  price: number;
+  ohlcv: OHLCV;
+}
+
 const TIME_PERIODS = {
   "1d": 24,
   "5d": 120,
@@ -54,7 +68,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ symb
 }
 
 // Fetch historical forex data from Alpha Vantage
-async function fetchHistoricalData(symbol: string, dataPoints: number) {
+async function fetchHistoricalData(symbol: string, dataPoints: number): Promise<HistoricalDataPoint[]> {
   const url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${symbol.substring(0, 3)}&to_symbol=${symbol.substring(3)}&apikey=${ALPHA_VANTAGE_API_KEY}`
   
   const response = await fetch(url)
@@ -124,9 +138,9 @@ async function fetchSentimentForCurrency(currency: string) {
 }
 
 // Function to fetch predictions from FastAPI
-async function getPredictionsFromFastAPI(symbol: string, historicalData: any, timeframe: string, period: string, sentimentData: number) {
+async function getPredictionsFromFastAPI(symbol: string, historicalData: HistoricalDataPoint[], timeframe: string, period: string, sentimentData: number) {
   const body = {
-    data: historicalData.map((data: any) => data.ohlcv),
+    data: historicalData.map((data) => data.ohlcv),
     sentiment: sentimentData, // Sentiment data used as an input feature
   }
   
@@ -147,7 +161,7 @@ async function getPredictionsFromFastAPI(symbol: string, historicalData: any, ti
 }
 
 // Format predictions with sentiment-enhanced predictions
-function formatPredictions(predictions: any[], timeframe: string, sentimentData: number) {
+function formatPredictions(predictions: number[], timeframe: string, sentimentData: number) {
   const now = new Date()
   const formattedPredictions: { name: string; points: { time: string; value: number }[] }[] = []
 

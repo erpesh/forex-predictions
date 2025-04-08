@@ -1,5 +1,7 @@
 "use client"
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts"
 import { Maximize2, Camera } from "lucide-react"
 import { useState } from "react"
@@ -41,7 +43,7 @@ const Chart = ({ data, predictions, timeframe }: { data: any[], predictions: any
 
       <div className={`${isFullChart ? "flex-grow" : "h-[400px]"} mb-4`}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={[...data, ...predictions.flatMap((modelPrediction) => modelPrediction.points.map((point) => ({
+          <LineChart data={[...data, ...predictions.flatMap((modelPrediction) => modelPrediction.points.map((point: any) => ({
             time: point.time,
             [modelPrediction.name]: point.value
           })))]}>
