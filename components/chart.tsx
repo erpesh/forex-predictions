@@ -128,9 +128,6 @@ const Chart = ({ data, predictions, timeframe }: { data: any[]; predictions: any
       }
     })
 
-    // Get the last data point to start predictions from
-    const lastDataPoint = data[data.length - 1]
-
     // Create a map to store all prediction points by time
     const predictionsByTime = new Map()
 
