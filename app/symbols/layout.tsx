@@ -4,11 +4,11 @@ import Link from "next/link"
 import { DollarSign, LineChart } from "lucide-react"
 
 const popularSymbols = [
-  { name: "EUR/USD", path: "EURUSD" },
-  { name: "GBP/USD", path: "GBPUSD" },
-  { name: "USD/JPY", path: "USDJPY" },
-  { name: "USD/CHF", path: "USDCHF" },
-  { name: "AUD/USD", path: "AUDUSD" },
+  { name: "EUR/USD", path: "EURUSD", disabled: false },
+  { name: "GBP/USD", path: "GBPUSD", disabled: true },
+  { name: "USD/JPY", path: "USDJPY", disabled: true },
+  { name: "USD/CHF", path: "USDCHF", disabled: true },
+  { name: "AUD/USD", path: "AUDUSD", disabled: false },
 ]
 
 export default function SymbolsLayout({
@@ -29,14 +29,19 @@ export default function SymbolsLayout({
           <nav className="space-y-1">
             <div className="mb-4">
               <h3 className="px-3 text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Popular Pairs</h3>
-              {popularSymbols.map((symbol) => (
+              {popularSymbols.map((symbol) => ( symbol.disabled ? (
+                <Button variant="ghost" className="w-full justify-start" disabled>
+                  <LineChart className="mr-2 h-4 w-4" />
+                  {symbol.name}
+                </Button>
+              ): (
                 <Link key={symbol.path} href={`/symbols/${symbol.path}`}>
-                  <Button variant="ghost" className="w-full justify-start">
+                  <Button variant="ghost" className="w-full justify-start cursor-pointer">
                     <LineChart className="mr-2 h-4 w-4" />
                     {symbol.name}
                   </Button>
                 </Link>
-              ))}
+              )))}
             </div>
           </nav>
         </div>
