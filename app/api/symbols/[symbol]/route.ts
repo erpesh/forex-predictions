@@ -14,6 +14,16 @@ interface HistoricalDataPoint {
   ohlcv: OHLCV;
 }
 
+export interface Prediction {
+  time: string,
+  value: number,
+}
+
+export interface PredictionData {
+  name: string
+  points: Prediction[]
+}
+
 const TIME_PERIODS: Record<string, number> = {
   "1d": 24,
   "5d": 120,
@@ -45,7 +55,6 @@ const formatTimeframeToPeriod = (timeframe: string) => {
   }
 }
 
-// const ALPHA_VANTAGE_API_KEY = "GVS645A0H1CNI10V"
 const ALPHA_VANTAGE_API_KEY = process.env.NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY
 const FASTAPI_URL = process.env.NEXT_PUBLIC_API_URL
 
@@ -60,7 +69,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ symb
   const historicalData = await fetchHistoricalData(symbol, dataPoints)
   const sentimentData = await fetchSentimentData(symbol) // Fetch sentiment for both currencies
   const predictions = await getPredictionsFromFastAPI(symbol, historicalData, timeframe, period, sentimentData)
-
+  
   return NextResponse.json({
     historical: historicalData,
     predictions: predictions,
@@ -112,8 +121,6 @@ async function fetchSentimentData(symbol: string) {
   const combinedSentiment = sentimentBaseCurrency.concat(sentimentQuoteCurrency)
   const averageSentiment = combinedSentiment.reduce((acc, val) => acc + val.sentiment_score, 0) / combinedSentiment.length
 
-  console.log('avgsen', averageSentiment)
-
   return averageSentiment
 }
 
@@ -161,29 +168,45 @@ async function getPredictionsFromFastAPI(symbol: string, historicalData: Histori
   return formatPredictions(data.predictions, timeframe, sentimentData)
 }
 
-// Format predictions with sentiment-enhanced predictions
+// Format predictions with sentiment-enhanced predictions and a clean version
 function formatPredictions(predictions: number[], timeframe: string, sentimentData: number) {
   const now = new Date()
   const formattedPredictions: { name: string; points: { time: string; value: number }[] }[] = []
 
-  const points = predictions.map((pred, index) => {
-      const date = new Date(now)
-      date.setHours(date.getHours() + (1 + index) * OFFSETS[timeframe]) // Add interval in hours
+  // Clean predictions (without sentiment)
+  const cleanPredictions = predictions.map((pred, index) => {
+    const date = new Date(now)
+    date.setHours(date.getHours() + (1 + index) * OFFSETS[timeframe]) // Add interval in hours
 
-      const adjustedPred = pred
-      // Adjust prediction based on sentiment score
-      console.log(sentimentData)
+    return {
+      time: date.toISOString(),
+      value: pred,
+    }
+  })
 
-      return {
-        time: date.toISOString(),
-        value: adjustedPred,
-      }
-    })
+  formattedPredictions.push({
+    name: `LSTM`,
+    points: cleanPredictions
+  })
 
-    formattedPredictions.push({
-      name: `LSTM`,
-      points: points
-    })
+  // Sentiment-adjusted predictions
+  const sentimentAdjustedPredictions = predictions.map((pred, index) => {
+    const date = new Date(now)
+    date.setHours(date.getHours() + (1 + index) * OFFSETS[timeframe]) // Add interval in hours
+
+    // Adjust prediction based on sentiment score
+    const adjustedPred = pred + (sentimentData * 0.1)  // Simple adjustment with sentiment (feel free to change the multiplier)
+
+    return {
+      time: date.toISOString(),
+      value: adjustedPred,
+    }
+  })
+
+  formattedPredictions.push({
+    name: `LSTM with Sentiment`,
+    points: sentimentAdjustedPredictions
+  })
   
   return formattedPredictions
 }

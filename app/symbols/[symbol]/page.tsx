@@ -56,18 +56,6 @@ export default async function SymbolPage({
         
         <div className="flex justify-between items-center">
           <Timeframes selectedTimeframe={timeframe} />
-
-          <div className="flex items-center space-x-2 bg-gray-100 p-2 rounded-lg">
-            <span className="text-sm font-medium">Models:</span>
-            {PREDICTION_MODELS.map((model) => (
-              <div key={model.name} className="flex items-center">
-                <Checkbox
-                  id={model.name}
-                />
-                <label htmlFor={model.name} className="text-xs font-medium">{model.name.split(" ")[0]}</label>
-              </div>
-            ))}
-          </div>
         </div>
       </Card>
     </div>

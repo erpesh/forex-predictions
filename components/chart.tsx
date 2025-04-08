@@ -1,5 +1,4 @@
 "use client"
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useState, useCallback, useMemo } from "react"
 import {
@@ -14,17 +13,26 @@ import {
   Brush,
   ReferenceLine,
 } from "recharts"
-import { Maximize2, Camera, TrendingUp } from "lucide-react"
+import { Maximize2, Camera, TrendingUp, LineChartIcon } from "lucide-react"
 import { Button } from "./ui/button"
 import { Checkbox } from "./ui/checkbox"
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 import { Label } from "./ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 
 // Define moving average periods
 const MOVING_AVERAGES = [
   { period: 7, name: "7-Day MA", color: "#f43f5e" },
   { period: 14, name: "14-Day MA", color: "#8b5cf6" },
   { period: 30, name: "30-Day MA", color: "#ec4899" },
+]
+
+// Define prediction colors
+const PREDICTION_COLORS = [
+  "#22c55e", // Green
+  "#f97316", // Orange
+  "#8b5cf6", // Purple
+  "#ec4899", // Pink
 ]
 
 const Chart = ({ data, predictions, timeframe }: { data: any[]; predictions: any[]; timeframe: string }) => {
@@ -35,6 +43,9 @@ const Chart = ({ data, predictions, timeframe }: { data: any[]; predictions: any
     30: false,
   })
   const [selectedRange, setSelectedRange] = useState<[number, number] | null>(null)
+
+  // State to track visible prediction models
+  const [visibleModels, setVisibleModels] = useState<string[]>(predictions.map((model) => model.name))
 
   // Calculate moving averages
   const calculateMovingAverage = useCallback((data: any[], period: number) => {
@@ -59,6 +70,17 @@ const Chart = ({ data, predictions, timeframe }: { data: any[]; predictions: any
       ...prev,
       [period]: !prev[period],
     }))
+  }
+
+  // Toggle prediction model visibility
+  const togglePredictionModel = (modelName: string) => {
+    setVisibleModels((prev) => {
+      if (prev.includes(modelName)) {
+        return prev.filter((name) => name !== modelName)
+      } else {
+        return [...prev, modelName]
+      }
+    })
   }
 
   // Handle brush change for range selection
@@ -91,8 +113,10 @@ const Chart = ({ data, predictions, timeframe }: { data: any[]; predictions: any
     }
   }
 
-  // Prepare chart data with moving averages
+  // Prepare chart data with moving averages and aligned predictions
   const chartData = useMemo(() => {
+    if (!data || data.length === 0) return []
+
     // Start with the original data
     let processedData = [...data]
 
@@ -103,19 +127,42 @@ const Chart = ({ data, predictions, timeframe }: { data: any[]; predictions: any
       }
     })
 
-    // Add prediction data
-    const combinedData = [
-      ...processedData,
-      ...predictions.flatMap((modelPrediction) =>
-        modelPrediction.points.map((point: any) => ({
-          time: point.time,
-          [modelPrediction.name]: point.value,
-        })),
-      ),
-    ]
+    // Get the last data point to start predictions from
+    const lastDataPoint = data[data.length - 1]
+    const lastDataTime = lastDataPoint ? new Date(lastDataPoint.time) : new Date()
 
-    return combinedData
-  }, [data, predictions, showMovingAverages, calculateMovingAverage])
+    // Create a map to store all prediction points by time
+    const predictionsByTime = new Map()
+
+    // Process each model's predictions to start from the same point
+    // Only include visible models
+    predictions
+      .filter((model) => visibleModels.includes(model.name))
+      .forEach((modelPrediction, modelIndex) => {
+        // Sort prediction points by time
+        const sortedPoints = [...modelPrediction.points].sort(
+          (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime(),
+        )
+
+        // Add each prediction point to the map
+        sortedPoints.forEach((point, pointIndex) => {
+          if (!predictionsByTime.has(point.time)) {
+            predictionsByTime.set(point.time, { time: point.time })
+          }
+
+          // Use the model name as the key for this prediction value
+          predictionsByTime.get(point.time)[modelPrediction.name] = point.value
+        })
+      })
+
+    // Convert the map to an array and sort by time
+    const predictionPoints = Array.from(predictionsByTime.values()).sort(
+      (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime(),
+    )
+
+    // Combine historical data and prediction data
+    return [...processedData, ...predictionPoints]
+  }, [data, predictions, showMovingAverages, calculateMovingAverage, visibleModels])
 
   // Get statistics for the selected range or full data
   const getStatistics = useMemo(() => {
@@ -144,6 +191,7 @@ const Chart = ({ data, predictions, timeframe }: { data: any[]; predictions: any
         <div className="flex items-center">
           {selectedRange && (
             <div className="text-sm bg-muted px-2 py-1 rounded mr-4">
+              <span className="font-medium">Selected Range Stats: </span>
               <span className="text-muted-foreground">High: {getStatistics.high.toFixed(4)}</span>
               <span className="mx-2">|</span>
               <span className="text-muted-foreground">Low: {getStatistics.low.toFixed(4)}</span>
@@ -156,31 +204,92 @@ const Chart = ({ data, predictions, timeframe }: { data: any[]; predictions: any
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="icon">
+                <LineChartIcon className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64">
+              <Tabs defaultValue="predictions">
+                <TabsList className="w-full mb-2">
+                  <TabsTrigger value="predictions" className="flex-1">
+                    Predictions
+                  </TabsTrigger>
+                  <TabsTrigger value="indicators" className="flex-1">
+                    Indicators
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="predictions" className="space-y-2">
+                  <h3 className="font-medium mb-1">Prediction Models</h3>
+                  <div className="space-y-2">
+                    {predictions.map((model, index) => (
+                      <div key={model.name} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`model-${model.name}`}
+                          checked={visibleModels.includes(model.name)}
+                          onCheckedChange={() => togglePredictionModel(model.name)}
+                        />
+                        <Label htmlFor={`model-${model.name}`} className="text-sm flex items-center">
+                          <div
+                            className="w-3 h-3 rounded-full mr-2"
+                            style={{ backgroundColor: PREDICTION_COLORS[index % PREDICTION_COLORS.length] }}
+                          ></div>
+                          {model.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="indicators" className="space-y-2">
+                  <h3 className="font-medium mb-1">Moving Averages</h3>
+                  <div className="space-y-2">
+                    {MOVING_AVERAGES.map((ma) => (
+                      <div key={ma.period} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`ma-${ma.period}`}
+                          checked={showMovingAverages[ma.period]}
+                          onCheckedChange={() => toggleMovingAverage(ma.period)}
+                        />
+                        <Label htmlFor={`ma-${ma.period}`} className="text-sm flex items-center">
+                          <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: ma.color }}></div>
+                          {ma.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </PopoverContent>
+          </Popover>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="icon">
                 <TrendingUp className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-60">
               <div className="space-y-2">
-                <h3 className="font-medium">Moving Averages</h3>
-                <div className="space-y-2">
-                  {MOVING_AVERAGES.map((ma) => (
-                    <div key={ma.period} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`ma-${ma.period}`}
-                        checked={showMovingAverages[ma.period]}
-                        onCheckedChange={() => toggleMovingAverage(ma.period)}
-                      />
-                      <Label htmlFor={`ma-${ma.period}`} className="text-sm flex items-center">
-                        <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: ma.color }}></div>
-                        {ma.name}
-                      </Label>
-                    </div>
-                  ))}
+                <h3 className="font-medium">Chart Statistics</h3>
+                <div className="bg-muted p-3 rounded space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">High:</span>
+                    <span className="font-medium">{getStatistics.high.toFixed(4)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Low:</span>
+                    <span className="font-medium">{getStatistics.low.toFixed(4)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Average:</span>
+                    <span className="font-medium">{getStatistics.avg.toFixed(4)}</span>
+                  </div>
                 </div>
               </div>
             </PopoverContent>
           </Popover>
-          <Button variant="outline" size="icon">
+
+          <Button variant="outline" size="icon" disabled>
             <Camera className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="icon" onClick={() => setIsFullChart(!isFullChart)}>
@@ -230,25 +339,27 @@ const Chart = ({ data, predictions, timeframe }: { data: any[]; predictions: any
               connectNulls={true}
             />
 
-            {/* Prediction lines */}
-            {predictions.map((modelPrediction) => (
-              <Line
-                key={modelPrediction.name}
-                type="linear"
-                dataKey={modelPrediction.name}
-                stroke={modelPrediction.color || "#999"}
-                strokeWidth={2}
-                dot={false}
-                strokeDasharray="5 5"
-                name={`${modelPrediction.name} Prediction`}
-                connectNulls={true}
-              />
-            ))}
+            {/* Prediction lines with custom colors - only show visible models */}
+            {predictions
+              .filter((model) => visibleModels.includes(model.name))
+              .map((modelPrediction, index) => (
+                <Line
+                  key={modelPrediction.name}
+                  type="linear"
+                  dataKey={modelPrediction.name}
+                  stroke={PREDICTION_COLORS[index % PREDICTION_COLORS.length]}
+                  strokeWidth={2}
+                  dot={false}
+                  strokeDasharray="5 5"
+                  name={`${modelPrediction.name} Prediction`}
+                  connectNulls={true}
+                />
+              ))}
 
             {/* Range selector brush */}
             <Brush
               dataKey="time"
-              height={30}
+              height={15}
               stroke="#8884d8"
               tickFormatter={formatTime}
               onChange={handleBrushChange}
