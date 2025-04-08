@@ -31,11 +31,9 @@ const formatTimeframeToPeriod = (timeframe: string) => {
   }
 }
 
-const PREDICTION_MODELS = ['LSTM']
-
 // const ALPHA_VANTAGE_API_KEY = "GVS645A0H1CNI10V"
 const ALPHA_VANTAGE_API_KEY = process.env.NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY
-const FASTAPI_URL = "http://localhost:8000/predict"
+const FASTAPI_URL = process.env.NEXT_PUBLIC_API_URL
 
 export async function GET(request: Request, { params }: { params: Promise<{ symbol: string }> }) {
   const { symbol } = await params;
@@ -45,7 +43,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ symb
   const dataPoints = TIME_PERIODS[timeframe] || 30
   const period = formatTimeframeToPeriod(timeframe)
 
-  const historicalData = await fetchHistoricalData(symbol, dataPoints, period)
+  const historicalData = await fetchHistoricalData(symbol, dataPoints)
   const sentimentData = await fetchSentimentData(symbol) // Fetch sentiment for both currencies
   const predictions = await getPredictionsFromFastAPI(symbol, historicalData, timeframe, period, sentimentData)
 
@@ -56,7 +54,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ symb
 }
 
 // Fetch historical forex data from Alpha Vantage
-async function fetchHistoricalData(symbol: string, dataPoints: number, period: string) {
+async function fetchHistoricalData(symbol: string, dataPoints: number) {
   const url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${symbol.substring(0, 3)}&to_symbol=${symbol.substring(3)}&apikey=${ALPHA_VANTAGE_API_KEY}`
   
   const response = await fetch(url)
@@ -132,7 +130,7 @@ async function getPredictionsFromFastAPI(symbol: string, historicalData: any, ti
     sentiment: sentimentData, // Sentiment data used as an input feature
   }
   
-  const response = await fetch(`${FASTAPI_URL}/${symbol}/${period}`, {
+  const response = await fetch(`${FASTAPI_URL}/predict/${symbol}/${period}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -157,8 +155,9 @@ function formatPredictions(predictions: any[], timeframe: string, sentimentData:
       const date = new Date(now)
       date.setHours(date.getHours() + (1 + index) * OFFSETS[timeframe]) // Add interval in hours
 
-      let adjustedPred = pred
+      const adjustedPred = pred
       // Adjust prediction based on sentiment score
+      console.log(sentimentData)
 
       return {
         time: date.toISOString(),

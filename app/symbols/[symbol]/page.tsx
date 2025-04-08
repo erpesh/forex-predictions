@@ -3,6 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import Chart from "@/components/chart"
 import Timeframes from "./timeframes"
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 
 const PREDICTION_MODELS = [
   { name: "LSTM", color: "#22c55e" },
@@ -25,7 +26,7 @@ export default async function SymbolPage({
   const fetchData = async () => {
     try {
       const response = await fetch(
-        `http://localhost:3000/api/symbols/${symbol}?timeframe=${timeframe}`
+        `${SITE_URL}/api/symbols/${symbol}?timeframe=${timeframe}`
       )
       if (!response.ok) throw new Error("Failed to fetch data")
       return await response.json()
