@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 interface OHLCV {
   Open: number;
@@ -81,14 +82,15 @@ async function fetchHistoricalData(symbol: string, dataPoints: number): Promise<
   const timeSeries = data["Time Series FX (Daily)"]
 
   const historicalData = Object.entries(timeSeries).slice(0, dataPoints).map(([time, values]) => {
+    const typedValues = values as Record<string, string>; // Explicitly type 'values'
     return {
       time: time, // The date is in format YYYY-MM-DD
-      price: parseFloat(values["4. close"]), // Close price of the forex pair
+      price: parseFloat(typedValues["4. close"]), // Close price of the forex pair
       ohlcv: {
-        Open: parseFloat(values["1. open"]),
-        High: parseFloat(values["2. high"]),
-        Low: parseFloat(values["3. low"]),
-        Close: parseFloat(values["4. close"]),
+        Open: parseFloat(typedValues["1. open"]),
+        High: parseFloat(typedValues["2. high"]),
+        Low: parseFloat(typedValues["3. low"]),
+        Close: parseFloat(typedValues["4. close"]),
         Volume: 10000, // Placeholder volume value
       }
     }
