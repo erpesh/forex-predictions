@@ -1,13 +1,8 @@
 import { Card } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
 import Chart from "@/components/chart"
 import Timeframes from "./timeframes"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
-
-const PREDICTION_MODELS = [
-  { name: "LSTM", color: "#22c55e" },
-]
 
 const formatSymbol = (symbol: string) => symbol.replace(/([A-Z]{3})([A-Z]{3})/, "$1/$2")
 

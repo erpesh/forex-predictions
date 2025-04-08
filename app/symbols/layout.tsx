@@ -30,7 +30,7 @@ export default function SymbolsLayout({
             <div className="mb-4">
               <h3 className="px-3 text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Popular Pairs</h3>
               {popularSymbols.map((symbol) => ( symbol.disabled ? (
-                <Button variant="ghost" className="w-full justify-start" disabled>
+                <Button key={symbol.path} variant="ghost" className="w-full justify-start" disabled>
                   <LineChart className="mr-2 h-4 w-4" />
                   {symbol.name}
                 </Button>

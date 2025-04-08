@@ -1,4 +1,5 @@
 "use client"
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useState, useCallback, useMemo } from "react"
 import {
@@ -129,7 +130,6 @@ const Chart = ({ data, predictions, timeframe }: { data: any[]; predictions: any
 
     // Get the last data point to start predictions from
     const lastDataPoint = data[data.length - 1]
-    const lastDataTime = lastDataPoint ? new Date(lastDataPoint.time) : new Date()
 
     // Create a map to store all prediction points by time
     const predictionsByTime = new Map()
@@ -138,14 +138,14 @@ const Chart = ({ data, predictions, timeframe }: { data: any[]; predictions: any
     // Only include visible models
     predictions
       .filter((model) => visibleModels.includes(model.name))
-      .forEach((modelPrediction, modelIndex) => {
+      .forEach((modelPrediction) => {
         // Sort prediction points by time
         const sortedPoints = [...modelPrediction.points].sort(
           (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime(),
         )
 
         // Add each prediction point to the map
-        sortedPoints.forEach((point, pointIndex) => {
+        sortedPoints.forEach((point) => {
           if (!predictionsByTime.has(point.time)) {
             predictionsByTime.set(point.time, { time: point.time })
           }
