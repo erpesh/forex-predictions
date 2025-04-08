@@ -14,7 +14,7 @@ interface HistoricalDataPoint {
   ohlcv: OHLCV;
 }
 
-const TIME_PERIODS = {
+const TIME_PERIODS: Record<string, number> = {
   "1d": 24,
   "5d": 120,
   "1m": 30,
