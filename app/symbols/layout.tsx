@@ -1,7 +1,7 @@
 import type React from "react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { DollarSign, LineChart } from "lucide-react"
+import { DollarSign, FileBadge, LineChart } from "lucide-react"
 
 const popularSymbols = [
   { name: "EUR/USD", path: "EURUSD", disabled: false },
@@ -42,6 +42,13 @@ export default function SymbolsLayout({
                   </Button>
                 </Link>
               )))}
+              <h3 className="px-3 text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Feedback Form</h3>
+              <Link href="https://docs.google.com/forms/u/0/d/e/1FAIpQLSdQinQr9xc-FAHx9oyZ7UArgwp8GdQEHaRK17PZJpj7UuKLVw/formResponse" target="_blank" rel="noopener noreferrer">
+                <Button variant="ghost" className="w-full justify-start cursor-pointer">
+                  <FileBadge className="mr-2 h-4 w-4" />
+                  Feedback Form
+                </Button>
+              </Link>
             </div>
           </nav>
         </div>
