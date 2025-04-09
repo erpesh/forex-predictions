@@ -5,10 +5,10 @@ import { DollarSign, LineChart } from "lucide-react"
 
 const popularSymbols = [
   { name: "EUR/USD", path: "EURUSD", disabled: false },
+  { name: "AUD/USD", path: "AUDUSD", disabled: false },
   { name: "GBP/USD", path: "GBPUSD", disabled: true },
   { name: "USD/JPY", path: "USDJPY", disabled: true },
   { name: "USD/CHF", path: "USDCHF", disabled: true },
-  { name: "AUD/USD", path: "AUDUSD", disabled: false },
 ]
 
 export default function SymbolsLayout({

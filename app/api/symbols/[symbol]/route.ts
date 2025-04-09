@@ -67,19 +67,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ symb
   const period = formatTimeframeToPeriod(timeframe)
 
   const historicalData = await fetchHistoricalData(symbol, dataPoints)
-  const sentimentData = await fetchSentimentData(symbol) // Fetch sentiment for both currencies
+  const [sentimentData, newsData] = await fetchSentimentData(symbol) // Fetch sentiment for both currencies
   const predictions = await getPredictionsFromFastAPI(symbol, historicalData, timeframe, period, sentimentData)
   
   return NextResponse.json({
     historical: historicalData,
     predictions: predictions,
+    newsData: newsData,
   })
 }
 
 // Fetch historical forex data from Alpha Vantage
 async function fetchHistoricalData(symbol: string, dataPoints: number): Promise<HistoricalDataPoint[]> {
   const url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${symbol.substring(0, 3)}&to_symbol=${symbol.substring(3)}&apikey=${ALPHA_VANTAGE_API_KEY}`
-  
   const response = await fetch(url)
   const data = await response.json()
 
@@ -114,14 +114,14 @@ async function fetchSentimentData(symbol: string) {
   const quoteCurrency = symbol.substring(3)
 
   // Fetch sentiment for base and quote currencies
-  const sentimentBaseCurrency = await fetchSentimentForCurrency(baseCurrency)
-  const sentimentQuoteCurrency = await fetchSentimentForCurrency(quoteCurrency)
+  const [sentimentBaseCurrency, baseFeed] = await fetchSentimentForCurrency(baseCurrency)
+  const [sentimentQuoteCurrency, quoteFeed] = await fetchSentimentForCurrency(quoteCurrency)
 
   // Combine sentiment data by averaging scores
   const combinedSentiment = sentimentBaseCurrency.concat(sentimentQuoteCurrency)
   const averageSentiment = combinedSentiment.reduce((acc, val) => acc + val.sentiment_score, 0) / combinedSentiment.length
 
-  return averageSentiment
+  return [averageSentiment, {[baseCurrency]: baseFeed, [quoteCurrency]: quoteFeed}]
 }
 
 // Fetch news sentiment for a single currency
@@ -142,7 +142,7 @@ async function fetchSentimentForCurrency(currency: string) {
     description: article.summary,
   })) || []
 
-  return sentimentScores
+  return [sentimentScores, data.feed]
 }
 
 // Function to fetch predictions from FastAPI

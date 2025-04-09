@@ -36,7 +36,12 @@ const PREDICTION_COLORS = [
   "#ec4899", // Pink
 ]
 
-const Chart = ({ data, predictions, timeframe }: { data: any[]; predictions: any[]; timeframe: string }) => {
+const Chart = ({
+  data,
+  predictions,
+  timeframe,
+  symbol,
+}: { data: any[]; predictions: any[]; timeframe: string; symbol?: string }) => {
   const [isFullChart, setIsFullChart] = useState(false)
   const [showMovingAverages, setShowMovingAverages] = useState<{ [key: number]: boolean }>({
     7: false,
@@ -182,20 +187,37 @@ const Chart = ({ data, predictions, timeframe }: { data: any[]; predictions: any
     return { high, low, avg }
   }, [data, selectedRange])
 
+  // Get current exchange rate
+  const getCurrentRate = useMemo(() => {
+    if (!data || data.length === 0) return 0
+    return data[data.length - 1]?.price || 0
+  }, [data])
+
+  // Format currency pair for display
+  const formatCurrencyPair = useMemo(() => {
+    if (!symbol) return { base: "USD", quote: "EUR" }
+
+    // Handle formats like EURUSD, EUR/USD, etc.
+    const cleanSymbol = symbol.replace("/", "")
+    if (cleanSymbol.length === 6) {
+      return {
+        base: cleanSymbol.substring(0, 3),
+        quote: cleanSymbol.substring(3, 6),
+      }
+    }
+
+    return { base: "USD", quote: "EUR" }
+  }, [symbol])
+
   return (
     <div className={`space-y-4 ${isFullChart ? "fixed inset-0 bg-background z-50 p-4" : ""}`}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center">
-          {selectedRange && (
-            <div className="text-sm bg-muted px-2 py-1 rounded mr-4">
-              <span className="font-medium">Selected Range Stats: </span>
-              <span className="text-muted-foreground">High: {getStatistics.high.toFixed(4)}</span>
-              <span className="mx-2">|</span>
-              <span className="text-muted-foreground">Low: {getStatistics.low.toFixed(4)}</span>
-              <span className="mx-2">|</span>
-              <span className="text-muted-foreground">Avg: {getStatistics.avg.toFixed(4)}</span>
-            </div>
-          )}
+          <div className="text-sm bg-muted px-2 py-1 rounded mr-4">
+            <span className="font-medium">
+              1 {formatCurrencyPair.base} = {getCurrentRate.toFixed(6)} {formatCurrencyPair.quote}
+            </span>
+          </div>
         </div>
         <div className="flex gap-2">
           <Popover>

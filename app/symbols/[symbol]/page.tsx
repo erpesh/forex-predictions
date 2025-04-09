@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card"
 import Chart from "@/components/chart"
 import Timeframes from "./timeframes"
+import CurrencyNews from "@/components/currency-news"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 
@@ -36,8 +37,10 @@ export default async function SymbolPage({
   if (!data) {
     return <div>Failed to load data</div>
   }
+  console.log("Data fetched successfully:", data)
+  const { historical, predictions, newsData } = data
 
-  const { historical, predictions } = data
+  console.log('asfasf',newsData)
 
   return (
     <div className="space-y-4">
@@ -47,12 +50,14 @@ export default async function SymbolPage({
 
       <Card className="p-4">
 
-        <Chart data={historical} predictions={predictions} timeframe={timeframe} />
+        <Chart data={historical} predictions={predictions} timeframe={timeframe} symbol={symbol}/>
         
         <div className="flex justify-between items-center">
           <Timeframes selectedTimeframe={timeframe} />
         </div>
       </Card>
+
+      <CurrencyNews newsData={newsData} symbol={symbol}/>
     </div>
   )
 }
