@@ -2,8 +2,15 @@ import type React from "react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { DollarSign, FileBadge, LineChart } from "lucide-react"
+import PopularPairs from "@/components/popular-pairs"
 
-const popularSymbols = [
+export interface Symbol {
+  name: string,
+  path: string,
+  disabled: boolean,
+}
+
+const popularSymbols: Symbol[] = [
   { name: "EUR/USD", path: "EURUSD", disabled: false },
   { name: "AUD/USD", path: "AUDUSD", disabled: false },
   { name: "GBP/USD", path: "GBPUSD", disabled: true },
@@ -29,19 +36,7 @@ export default function SymbolsLayout({
           <nav className="space-y-1">
             <div className="mb-4">
               <h3 className="px-3 text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Popular Pairs</h3>
-              {popularSymbols.map((symbol) => ( symbol.disabled ? (
-                <Button key={symbol.path} variant="ghost" className="w-full justify-start" disabled>
-                  <LineChart className="mr-2 h-4 w-4" />
-                  {symbol.name}
-                </Button>
-              ): (
-                <Link key={symbol.path} href={`/symbols/${symbol.path}`}>
-                  <Button variant="ghost" className="w-full justify-start cursor-pointer">
-                    <LineChart className="mr-2 h-4 w-4" />
-                    {symbol.name}
-                  </Button>
-                </Link>
-              )))}
+              <PopularPairs popularSymbols={popularSymbols}/>
               <h3 className="px-3 text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Feedback Form</h3>
               <Link href="https://docs.google.com/forms/u/0/d/e/1FAIpQLSdQinQr9xc-FAHx9oyZ7UArgwp8GdQEHaRK17PZJpj7UuKLVw/formResponse" target="_blank" rel="noopener noreferrer">
                 <Button variant="ghost" className="w-full justify-start cursor-pointer">
