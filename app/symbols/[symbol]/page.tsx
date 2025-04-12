@@ -37,10 +37,8 @@ export default async function SymbolPage({
   if (!data) {
     return <div>Failed to load data</div>
   }
-  console.log("Data fetched successfully:", data)
-  const { historical, predictions, newsData } = data
 
-  console.log('asfasf',newsData)
+  const { historical, predictions, newsData } = data
 
   return (
     <div className="space-y-4">

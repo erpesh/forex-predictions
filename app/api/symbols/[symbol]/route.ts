@@ -56,29 +56,28 @@ const formatTimeframeToPeriod = (timeframe: string) => {
 }
 
 const ALPHA_VANTAGE_API_KEY = process.env.NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY
-const FASTAPI_URL = process.env.NEXT_PUBLIC_API_URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 export async function GET(request: Request, { params }: { params: Promise<{ symbol: string }> }) {
   const { symbol } = await params;
 
   const { searchParams } = new URL(request.url)
   const timeframe = searchParams.get("timeframe") || "1m"
-  const dataPoints = TIME_PERIODS[timeframe] || 30
   const period = formatTimeframeToPeriod(timeframe)
 
-  const historicalData = await fetchHistoricalData(symbol, dataPoints)
+  const historicalData = await fetchHistoricalData(symbol)
   const [sentimentData, newsData] = await fetchSentimentData(symbol) // Fetch sentiment for both currencies
   const predictions = await getPredictionsFromFastAPI(symbol, historicalData, timeframe, period, sentimentData)
   
   return NextResponse.json({
-    historical: historicalData,
+    historical: historicalData.slice(-TIME_PERIODS[timeframe]), // Limit historical data to the specified timeframe
     predictions: predictions,
     newsData: newsData,
   })
 }
 
 // Fetch historical forex data from Alpha Vantage
-async function fetchHistoricalData(symbol: string, dataPoints: number): Promise<HistoricalDataPoint[]> {
+async function fetchHistoricalData(symbol: string): Promise<HistoricalDataPoint[]> {
   const url = `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${symbol.substring(0, 3)}&to_symbol=${symbol.substring(3)}&apikey=${ALPHA_VANTAGE_API_KEY}`
   const response = await fetch(url)
   const data = await response.json()
@@ -89,7 +88,7 @@ async function fetchHistoricalData(symbol: string, dataPoints: number): Promise<
 
   const timeSeries = data["Time Series FX (Daily)"]
 
-  const historicalData = Object.entries(timeSeries).slice(0, dataPoints).map(([time, values]) => {
+  const historicalData = Object.entries(timeSeries).map(([time, values]) => {
     const typedValues = values as Record<string, string>; // Explicitly type 'values'
     return {
       time: time, // The date is in format YYYY-MM-DD
@@ -145,14 +144,21 @@ async function fetchSentimentForCurrency(currency: string) {
   return [sentimentScores, data.feed]
 }
 
+interface PredictionResponse {
+  predictions: number[],
+  predictions_with_sentiment: number[],
+}
+
 // Function to fetch predictions from FastAPI
-async function getPredictionsFromFastAPI(symbol: string, historicalData: HistoricalDataPoint[], timeframe: string, period: string, sentimentData: number) {
+async function getPredictionsFromFastAPI(symbol: string, historicalData: HistoricalDataPoint[], timeframe: string, period: string, sentimentScore: number) {
   const body = {
     data: historicalData.map((data) => data.ohlcv),
-    sentiment: sentimentData, // Sentiment data used as an input feature
+    sentimentScore: sentimentScore, // Sentiment data used as an input feature
   }
+
+  console.log('lengths', body.data.length)
   
-  const response = await fetch(`${FASTAPI_URL}/predict/${symbol}/${period}`, {
+  const response = await fetch(`${API_URL}/predict/${symbol}/${period}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -165,13 +171,16 @@ async function getPredictionsFromFastAPI(symbol: string, historicalData: Histori
   }
 
   const data = await response.json()
-  return formatPredictions(data.predictions, timeframe, sentimentData)
+  return formatPredictions(data, timeframe)
 }
 
+
+
 // Format predictions with sentiment-enhanced predictions and a clean version
-function formatPredictions(predictions: number[], timeframe: string, sentimentData: number) {
+function formatPredictions(predictionData: PredictionResponse, timeframe: string) {
   const now = new Date()
   const formattedPredictions: { name: string; points: { time: string; value: number }[] }[] = []
+  const { predictions, predictions_with_sentiment } = predictionData
 
   // Clean predictions (without sentiment)
   const cleanPredictions = predictions.map((pred, index) => {
@@ -185,26 +194,23 @@ function formatPredictions(predictions: number[], timeframe: string, sentimentDa
   })
 
   formattedPredictions.push({
-    name: `LSTM`,
+    name: `Machine Learning`,
     points: cleanPredictions
   })
 
   // Sentiment-adjusted predictions
-  const sentimentAdjustedPredictions = predictions.map((pred, index) => {
+  const sentimentAdjustedPredictions = predictions_with_sentiment.map((pred, index) => {
     const date = new Date(now)
     date.setHours(date.getHours() + (1 + index) * OFFSETS[timeframe]) // Add interval in hours
 
-    // Adjust prediction based on sentiment score
-    const adjustedPred = pred + (sentimentData * 0.1)  // Simple adjustment with sentiment (feel free to change the multiplier)
-
     return {
       time: date.toISOString(),
-      value: adjustedPred,
+      value: pred,
     }
   })
 
   formattedPredictions.push({
-    name: `LSTM with Sentiment`,
+    name: `ML with Sentiment`,
     points: sentimentAdjustedPredictions
   })
   
