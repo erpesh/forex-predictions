@@ -7,11 +7,13 @@ import joblib
 import os
 from typing import Optional
 
+from requests import get
+
 # FastAPI app instance
 app = FastAPI()
 
 # Supported currency pairs
-SUPPORTED_PAIRS = ["AUDUSD", "EURUSD", "GBPUSD"]
+SUPPORTED_PAIRS = ["AUDUSD", "EURUSD"]
 
 # Base directory where models and scalers are stored
 MODELS_BASE_DIR = "models"
@@ -26,6 +28,7 @@ class OHLCData(BaseModel):
 
 class PredictionRequest(BaseModel):
     data: list[OHLCData]  # A list of OHLC data points
+    sentimentScore: Optional[float] = None  # Optional sentiment score
 
 # Load model and scaler dynamically based on currency pair
 def load_model_and_scaler(currency_pair: str, period: str):
@@ -71,11 +74,14 @@ def preprocess_data(mock_df, scaler):
     return mock_sequences
 
 # Get multiple predictions
-def get_multiple_predictions(mock_sequences, model, scaler, num_predictions=5):
+def get_multiple_predictions(sequences, model, scaler, num_predictions=5, sentiment_score=None):
     predictions = []
-    current_sequence = mock_sequences.copy()
+    current_sequence = sequences.copy()
+    if sentiment_score is not None:
+        # Adjust the last sequence based on sentiment score
+        current_sequence[:, -1, 3] = current_sequence[:, -1, 3] * sentiment_score
 
-    for _ in range(num_predictions):
+    for i in range(num_predictions):
         # Predict using the LSTM model
         prediction_normalized = model.predict(current_sequence)
 
@@ -113,6 +119,9 @@ async def predict(currency_pair: str, period: str, data: PredictionRequest):
         data_dict = [item.dict() for item in data.data]
         df = pd.DataFrame(data_dict)
         
+        sentiment_score = data.sentimentScore 
+        print(f"Sentiment Score: {sentiment_score}")
+        
         # Calculate RSI and MACD
         df['RSI'] = calculate_rsi(df, window=14)
         df['MACD'], df['Signal_Line'], df['Histogram'] = calculate_macd(df)
@@ -121,15 +130,20 @@ async def predict(currency_pair: str, period: str, data: PredictionRequest):
         df.dropna(inplace=True)
 
         # Preprocess the data (normalize and reshape for LSTM input)
-        mock_sequences = preprocess_data(df, scaler)
+        sequences = preprocess_data(df, scaler)
 
         # Get multiple predictions
-        predictions = get_multiple_predictions(mock_sequences, model, scaler, num_predictions=5)
+        predictions = get_multiple_predictions(sequences, model, scaler)
+        predictions_with_sentiment = predictions.copy()
+        if sentiment_score is not None:
+            # Use sentiment score to adjust the last 
+            predictions_with_sentiment = get_multiple_predictions(sequences, model, scaler, sentiment_score=sentiment_score)
         
         # Return predictions as a JSON response
         return {
             "currency_pair": currency_pair,
-            "predictions": predictions
+            "predictions": predictions,
+            "predictions_with_sentiment": predictions_with_sentiment,
         }
     
     except FileNotFoundError as e:
