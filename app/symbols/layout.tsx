@@ -1,7 +1,7 @@
 import type React from "react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { DollarSign, FileBadge, LineChart } from "lucide-react"
+import { DollarSign, FileBadge } from "lucide-react"
 import PopularPairs from "@/components/popular-pairs"
 
 export interface Symbol {
