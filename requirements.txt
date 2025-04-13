@@ -6,3 +6,4 @@ matplotlib
 uvicorn
 joblib
 fastapi
+sqlalchemy
