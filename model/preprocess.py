@@ -4,34 +4,29 @@ import os
 from sklearn.preprocessing import MinMaxScaler
 import joblib
 
-def load_data(data_directory):
+def load_data(data_directory: str, symbol: str, period: str):
     data_list = []
     
     # Walk through all subdirectories and files in the 'data' directory
-    for timeframe in ['MT_D1']:
-        timeframe_folder = os.path.join(data_directory, timeframe)
-        
-        # for file_name in os.listdir(timeframe_folder):
-        file_name = 'EURUSD_D1.csv'
-        if file_name.endswith('.csv'):
-            file_path = os.path.join(timeframe_folder, file_name)
-            
-            columns = ['Time', 'Open', 'High', 'Low', 'Close', 'Volume']
+    period_folder = os.path.join(data_directory, period)
+    
+    file_name = symbol + '_' + period + '.csv'
+    file_path = os.path.join(period_folder, file_name)
+    
+    columns = ['Time', 'Open', 'High', 'Low', 'Close', 'Volume']
 
-            data = pd.read_csv(file_path, header=None, names=columns, sep=',')
+    data = pd.read_csv(file_path, header=None, names=columns, sep=',')
 
-            data['Time'] = pd.to_datetime(data['Time'], errors='coerce')
+    data['Time'] = pd.to_datetime(data['Time'], errors='coerce')
 
-            data.set_index('Time', inplace=True)
-            data.sort_index(inplace=True)
+    data.set_index('Time', inplace=True)
+    data.sort_index(inplace=True)
 
-            currency_pair = file_name.split('_')[0]
-            data['Currency'] = currency_pair
-            data['Timeframe'] = timeframe
+    currency_pair = file_name.split('_')[0]
+    data['Currency'] = currency_pair
+    data['Timeframe'] = period
 
-            data_list.append(data)
-            # Only load one file for now
-            break
+    data_list.append(data)
     
     combined_data = pd.concat(data_list)
     print("Combined data head:", combined_data.head())  # Debug
@@ -105,8 +100,8 @@ def create_sequences(data, seq_length=30):
     return np.array(sequences), np.array(labels)
 
 
-def preprocess_data(data_directory, seq_length=30):
-    data = load_data(data_directory)
+def preprocess_data(data_directory: str, symbol: str, period: str, seq_length=30):
+    data = load_data(data_directory, symbol, period)
     print("Data loaded. Shape:", data.shape)  # Debug
     
     data = fill_missing_values(data)

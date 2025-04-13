@@ -2,13 +2,4 @@ from model.train import train_lstm_model
 
 if __name__ == "__main__":
     print("Training LSTM model...")
-    train_lstm_model()
-
-
-# import pandas as pd
-
-# # Load the data
-# data = pd.read_csv('data/eurusd.csv', sep='\t')  # Replace with your actual file path
-
-# # Print the column names
-# print(data.columns)
+    train_lstm_model('GBPUSD', 'D1')
