@@ -5,13 +5,12 @@ from sklearn.preprocessing import MinMaxScaler
 import joblib
 
 def load_data(data_directory: str, symbol: str, period: str):
-    data_list = []
+    file_name = f"{symbol}_{period.upper()}.csv"
+    file_path = os.path.join(data_directory, period, file_name)
     
-    # Walk through all subdirectories and files in the 'data' directory
-    period_folder = os.path.join(data_directory, period)
-    
-    file_name = symbol + '_' + period + '.csv'
-    file_path = os.path.join(period_folder, file_name)
+    # Check if the file exists
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"File {file_name} not found in {file_path}")
     
     columns = ['Time', 'Open', 'High', 'Low', 'Close', 'Volume']
 
@@ -21,16 +20,8 @@ def load_data(data_directory: str, symbol: str, period: str):
 
     data.set_index('Time', inplace=True)
     data.sort_index(inplace=True)
-
-    currency_pair = file_name.split('_')[0]
-    data['Currency'] = currency_pair
-    data['Timeframe'] = period
-
-    data_list.append(data)
     
-    combined_data = pd.concat(data_list)
-    print("Combined data head:", combined_data.head())  # Debug
-    return combined_data
+    return data
 
 def fill_missing_values(data):
     data.fillna(method='ffill', inplace=True)
