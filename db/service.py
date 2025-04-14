@@ -8,6 +8,12 @@ def get_currency_pair(db: Session, currency_pair_name: str):
         models.CurrencyPair.name == currency_pair_name,
         models.CurrencyPair.enabled == '1'
     ).first()
+    
+# Get all enabled currency pairs
+def get_all_currency_pairs(db: Session):
+    return db.query(models.CurrencyPair).filter(
+        models.CurrencyPair.enabled == '1'
+    ).all()
 
 # Get period by name and check if enabled
 def get_period(db: Session, period_name: str):
@@ -40,6 +46,14 @@ def get_n_predictions(db: Session, currency_pair_id: int, period_id: int, model_
         models.Prediction.prediction_model_id == model_id,
         models.Prediction.date >= start_date
     ).order_by(models.Prediction.date).limit(n).all()
+    
+def get_all_past_predictions(db: Session, currency_pair_id: int, period_id: int, model_id: int, last_date: datetime):
+    return db.query(models.Prediction).filter(
+        models.Prediction.currency_pair_id == currency_pair_id,
+        models.Prediction.period_id == period_id,
+        models.Prediction.prediction_model_id == model_id,
+        models.Prediction.date < last_date
+    ).order_by(models.Prediction.date).all()
 
 # Update prediction
 def update_prediction(db: Session, existing_prediction, new_value: float, last_live_value: float):

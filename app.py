@@ -39,6 +39,14 @@ class OHLCData(BaseModel):
 class PredictionRequest(BaseModel):
     data: list[OHLCData]
     sentimentScore: Optional[float] = None
+    
+@app.get("/currency_pairs")
+async def get_currency_pairs(db: Session = Depends(get_db)):
+    try:
+        currency_pairs = service.get_all_currency_pairs(db)
+        return [pair.name for pair in currency_pairs]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching currency pairs: {str(e)}")
 
 @app.post("/predict/{currency_pair}/{period}")
 async def predict(currency_pair: str, period: str, data: PredictionRequest, db: Session = Depends(get_db)):
@@ -119,6 +127,9 @@ async def predict(currency_pair: str, period: str, data: PredictionRequest, db: 
             else:
                 service.create_prediction(db, currency_pair_record.id, period_record.id, LSTM_sentiment_model.id, LSTM_sentiment_prediction, last_data_value, prediction_date)
 
+        # past_lstm_predictions = service.get_all_past_predictions(db, currency_pair_record.id, period_record.id, LSTM_model.id, matched_date)
+        # past_lstm_sentiment_predictions = service.get_all_past_predictions(db, currency_pair_record.id, period_record.id, LSTM_sentiment_model.id, matched_date)
+        
         return {"predictions": predictions, "predictions_with_sentiment": predictions_with_sentiment}
 
     except FileNotFoundError as e:
