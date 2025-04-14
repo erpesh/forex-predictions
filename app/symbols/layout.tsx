@@ -13,7 +13,7 @@ export interface Symbol {
 const popularSymbols: Symbol[] = [
   { name: "EUR/USD", path: "EURUSD", disabled: false },
   { name: "AUD/USD", path: "AUDUSD", disabled: false },
-  { name: "GBP/USD", path: "GBPUSD", disabled: true },
+  { name: "GBP/USD", path: "GBPUSD", disabled: false },
   { name: "USD/JPY", path: "USDJPY", disabled: true },
   { name: "USD/CHF", path: "USDCHF", disabled: true },
 ]
