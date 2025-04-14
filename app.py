@@ -23,7 +23,7 @@ def match_date_to_period(period: str, offset: int = 0) -> datetime:
     # for 'h1' it should be the start of the current hour, etc.
     now = datetime.utcnow()
     if period == 'd1':
-        return now.replace(hour=0, minute=0, second=0, microsecond=0) + pd.DateOffset(days=offset)
+        return now.replace(hour=0, minute=0, second=0, microsecond=0) + pd.DateOffset(days=offset + 1)
     elif period == 'h1':
         return now.replace(minute=0, second=0, microsecond=0) + pd.DateOffset(hours=offset)
     # Add more periods as needed
@@ -78,59 +78,68 @@ async def predict(currency_pair: str, period: str, data: PredictionRequest, db: 
         matched_date = match_date_to_period(period)
 
         # Check if prediction exists for today
-        existing_LSTM_predictions = service.get_n_predictions(db, currency_pair_record.id, period_record.id, LSTM_model.id, matched_date, num_of_predictions)
-        existing_LSTM_sentiment_predictions = service.get_n_predictions(db, currency_pair_record.id, period_record.id, LSTM_sentiment_model.id, matched_date, num_of_predictions)
+        existing_LSTM_predictions = service.get_n_future_predictions(db, currency_pair_record.id, period_record.id, LSTM_model.id, matched_date, num_of_predictions)
 
-        if len(existing_LSTM_predictions) == num_of_predictions and existing_LSTM_predictions[0].last_live_value == last_data_value:
-            return {
-                "predictions": [pred.value for pred in existing_LSTM_predictions],
-                "predictions_with_sentiment": [pred.value for pred in existing_LSTM_sentiment_predictions]
-            }
-        
-        
-        # Generate new predictions
-        model, scaler = load_model_and_scaler(currency_pair, period)
-        
-        df['RSI'] = calculate_rsi(df, window=14)
-        df['MACD'], df['Signal_Line'], df['Histogram'] = calculate_macd(df)
-
-        # Drop rows with NaN values (if any)
-        df.dropna(inplace=True)
-
-        # Preprocess the data (normalize and reshape for LSTM input)
-        sequences = preprocess_data(df, scaler)
-
-        # Get multiple predictions
-        predictions = get_multiple_predictions(sequences, model, scaler)
-        predictions_with_sentiment = predictions.copy()
-        if sentiment_score is not None:
-            # Use sentiment score to adjust the last prediction
-            predictions_with_sentiment = get_multiple_predictions(sequences, model, scaler, sentiment_score=sentiment_score)
-        
-        # Create new predictions in the database
-        for i in range(num_of_predictions):
-            prediction_date = match_date_to_period(period, i)
+        if not (len(existing_LSTM_predictions) >= num_of_predictions and existing_LSTM_predictions[0].last_live_value == last_data_value):
+            # Generate new predictions
+            model, scaler = load_model_and_scaler(currency_pair, period)
             
-            # Check if LSTM prediction already exists for the date
-            LSTM_prediction = predictions[i]
-            existing_prediction = service.get_prediction_by_date(db, currency_pair_record.id, period_record.id, LSTM_model.id, prediction_date)
-            if existing_prediction:
-                service.update_prediction(db, existing_prediction, LSTM_prediction, last_data_value)
-            else:
-                service.create_prediction(db, currency_pair_record.id, period_record.id, LSTM_model.id, LSTM_prediction, last_data_value, prediction_date)
-            
-            # Check if LSTM sentiment prediction already exists for the date
-            LSTM_sentiment_prediction = predictions_with_sentiment[i]
-            existing_sentiment_prediction = service.get_prediction_by_date(db, currency_pair_record.id, period_record.id, LSTM_sentiment_model.id, prediction_date)
-            if existing_sentiment_prediction:
-                service.update_prediction(db, existing_sentiment_prediction, LSTM_sentiment_prediction, last_data_value)
-            else:
-                service.create_prediction(db, currency_pair_record.id, period_record.id, LSTM_sentiment_model.id, LSTM_sentiment_prediction, last_data_value, prediction_date)
+            df['RSI'] = calculate_rsi(df, window=14)
+            df['MACD'], df['Signal_Line'], df['Histogram'] = calculate_macd(df)
 
-        # past_lstm_predictions = service.get_all_past_predictions(db, currency_pair_record.id, period_record.id, LSTM_model.id, matched_date)
-        # past_lstm_sentiment_predictions = service.get_all_past_predictions(db, currency_pair_record.id, period_record.id, LSTM_sentiment_model.id, matched_date)
+            # Drop rows with NaN values (if any)
+            df.dropna(inplace=True)
+
+            # Preprocess the data (normalize and reshape for LSTM input)
+            sequences = preprocess_data(df, scaler)
+
+            # Get multiple predictions
+            predictions = get_multiple_predictions(sequences, model, scaler)
+            predictions_with_sentiment = predictions.copy()
+            if sentiment_score is not None:
+                # Use sentiment score to adjust the last prediction
+                predictions_with_sentiment = get_multiple_predictions(sequences, model, scaler, sentiment_score=sentiment_score)
+            
+            # Create new predictions in the database
+            for i in range(num_of_predictions):
+                prediction_date = match_date_to_period(period, i)
+                
+                # Check if LSTM prediction already exists for the date
+                LSTM_prediction = predictions[i]
+                existing_prediction = service.get_prediction_by_date(db, currency_pair_record.id, period_record.id, LSTM_model.id, prediction_date)
+                if existing_prediction:
+                    print('Updating existing prediction')
+                    service.update_prediction(db, existing_prediction, LSTM_prediction, last_data_value)
+                else:
+                    print('Creating new prediction')
+                    service.create_prediction(db, currency_pair_record.id, period_record.id, LSTM_model.id, LSTM_prediction, last_data_value, prediction_date)
+                
+                # Check if LSTM sentiment prediction already exists for the date
+                LSTM_sentiment_prediction = predictions_with_sentiment[i]
+                existing_sentiment_prediction = service.get_prediction_by_date(db, currency_pair_record.id, period_record.id, LSTM_sentiment_model.id, prediction_date)
+                if existing_sentiment_prediction:
+                    service.update_prediction(db, existing_sentiment_prediction, LSTM_sentiment_prediction, last_data_value)
+                else:
+                    service.create_prediction(db, currency_pair_record.id, period_record.id, LSTM_sentiment_model.id, LSTM_sentiment_prediction, last_data_value, prediction_date)
+                
+
+        LSTM_predictions = service.get_all_predictions(db, currency_pair_record.id, period_record.id, LSTM_model.id)
+        LSTM_sentiment_predictions = service.get_all_predictions(db, currency_pair_record.id, period_record.id, LSTM_sentiment_model.id)  
         
-        return {"predictions": predictions, "predictions_with_sentiment": predictions_with_sentiment}
+        LSTM_predictions = [{
+            "value": pred.value,
+            "time": pred.date
+            } for pred in LSTM_predictions]
+        
+        LSTM_sentiment_predictions = [{
+            "value": pred.value,
+            "time": pred.date
+            } for pred in LSTM_sentiment_predictions] 
+        
+        return {
+            "LSTM_predictions": LSTM_predictions,
+            "LSTM_sentiment_predictions": LSTM_sentiment_predictions,
+        }
 
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))

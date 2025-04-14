@@ -39,7 +39,7 @@ def get_prediction_by_date(db: Session, currency_pair_id: int, period_id: int, m
     ).first()
     
 # Get N predictions by currency pair, period and model using period as offset
-def get_n_predictions(db: Session, currency_pair_id: int, period_id: int, model_id: int, start_date: datetime, n: int):
+def get_n_future_predictions(db: Session, currency_pair_id: int, period_id: int, model_id: int, start_date: datetime, n: int):
     return db.query(models.Prediction).filter(
         models.Prediction.currency_pair_id == currency_pair_id,
         models.Prediction.period_id == period_id,
@@ -47,12 +47,11 @@ def get_n_predictions(db: Session, currency_pair_id: int, period_id: int, model_
         models.Prediction.date >= start_date
     ).order_by(models.Prediction.date).limit(n).all()
     
-def get_all_past_predictions(db: Session, currency_pair_id: int, period_id: int, model_id: int, last_date: datetime):
+def get_all_predictions(db: Session, currency_pair_id: int, period_id: int, model_id: int):
     return db.query(models.Prediction).filter(
         models.Prediction.currency_pair_id == currency_pair_id,
         models.Prediction.period_id == period_id,
-        models.Prediction.prediction_model_id == model_id,
-        models.Prediction.date < last_date
+        models.Prediction.prediction_model_id == model_id
     ).order_by(models.Prediction.date).all()
 
 # Update prediction
