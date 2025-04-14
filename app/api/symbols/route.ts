@@ -1,7 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 // Gets all active symbols from the API
-export async function GET(request: Request) {
+export async function GET() {
     const res = await fetch(`${API_URL}/currency_pairs`, {
         method: 'GET',
         headers: {
