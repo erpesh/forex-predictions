@@ -4,13 +4,9 @@ import joblib
 import os
 
 MODELS_BASE_DIR = "models"
-SUPPORTED_PAIRS = ["AUDUSD", "EURUSD"]
 
 # Load model and scaler dynamically based on currency pair
 def load_model_and_scaler(currency_pair: str, period: str):
-    if currency_pair not in SUPPORTED_PAIRS:
-        raise ValueError(f"Unsupported currency pair: {currency_pair}. Supported pairs are: {SUPPORTED_PAIRS}")
-
     model_path = os.path.join(MODELS_BASE_DIR, currency_pair, period, "model.keras")
     scaler_path = os.path.join(MODELS_BASE_DIR, currency_pair, period, "scaler.pkl")
 
