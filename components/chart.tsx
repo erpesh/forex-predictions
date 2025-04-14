@@ -20,6 +20,7 @@ import { Checkbox } from "./ui/checkbox"
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 import { Label } from "./ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
+import { DataPoint, Prediction } from "@/app/symbols/[symbol]/page"
 
 // Define moving average periods
 const MOVING_AVERAGES = [
@@ -32,16 +33,17 @@ const MOVING_AVERAGES = [
 const PREDICTION_COLORS = [
   "#22c55e", // Green
   "#f97316", // Orange
-  "#8b5cf6", // Purple
-  "#ec4899", // Pink
 ]
 
 const Chart = ({
-  data,
+  historical,
   predictions,
   timeframe,
   symbol,
-}: { data: any[]; predictions: any[]; timeframe: string; symbol?: string }) => {
+}: { historical: DataPoint[]; predictions: Prediction[]; timeframe: string; symbol?: string }) => {
+
+  console.log(historical)
+  console.log(predictions)
   const [isFullChart, setIsFullChart] = useState(false)
   const [showMovingAverages, setShowMovingAverages] = useState<{ [key: number]: boolean }>({
     7: false,
@@ -121,10 +123,10 @@ const Chart = ({
 
   // Prepare chart data with moving averages and aligned predictions
   const chartData = useMemo(() => {
-    if (!data || data.length === 0) return []
+    if (!historical || historical.length === 0) return []
 
     // Start with the original data
-    let processedData = [...data]
+    let processedData = [...historical]
 
     // Calculate moving averages for each period
     MOVING_AVERAGES.forEach((ma) => {
@@ -163,17 +165,18 @@ const Chart = ({
     )
 
     // Combine historical data and prediction data
+    console.log([...processedData, ...predictionPoints])
     return [...processedData, ...predictionPoints]
-  }, [data, predictions, showMovingAverages, calculateMovingAverage, visibleModels])
+  }, [historical, predictions, showMovingAverages, calculateMovingAverage, visibleModels])
 
   // Get statistics for the selected range or full data
   const getStatistics = useMemo(() => {
-    if (!data || data.length === 0) return { high: 0, low: 0, avg: 0 }
+    if (!historical || historical.length === 0) return { high: 0, low: 0, avg: 0 }
 
-    let dataToUse = data
+    let dataToUse = historical
 
     if (selectedRange) {
-      dataToUse = data.slice(selectedRange[0], selectedRange[1] + 1)
+      dataToUse = historical.slice(selectedRange[0], selectedRange[1] + 1)
     }
 
     const prices = dataToUse.map((d) => d.price || 0).filter((p) => p > 0)
@@ -185,13 +188,13 @@ const Chart = ({
     const avg = prices.reduce((sum, price) => sum + price, 0) / prices.length
 
     return { high, low, avg }
-  }, [data, selectedRange])
+  }, [historical, selectedRange])
 
   // Get current exchange rate
   const getCurrentRate = useMemo(() => {
-    if (!data || data.length === 0) return 0
-    return data[data.length - 1]?.price || 0
-  }, [data])
+    if (!historical || historical.length === 0) return 0
+    return historical[historical.length - 1]?.price || 0
+  }, [historical])
 
   // Format currency pair for display
   const formatCurrencyPair = useMemo(() => {

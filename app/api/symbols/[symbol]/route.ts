@@ -9,13 +9,13 @@ interface OHLCV {
 }
 
 interface HistoricalDataPoint {
-  time: string; // YYYY-MM-DD
+  time: Date
   price: number;
   ohlcv: OHLCV;
 }
 
 export interface Prediction {
-  time: string,
+  time: Date,
   value: number,
 }
 
@@ -30,14 +30,6 @@ const TIME_PERIODS: Record<string, number> = {
   "1m": 30,
   "6m": 180,
   "1y": 365,
-}
-
-const OFFSETS = { // Offset in hours
-  '1d': 1,
-  '5d': 1,
-  '1m': 24,
-  '6m': 24,
-  '1y': 24,
 }
 
 const formatTimeframeToPeriod = (timeframe: string) => {
@@ -67,8 +59,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ symb
 
   const historicalData = await fetchHistoricalData(symbol)
   const [sentimentData, newsData] = await fetchSentimentData(symbol) // Fetch sentiment for both currencies
-  const predictions = await getPredictionsFromFastAPI(symbol, historicalData, timeframe, period, sentimentData)
-  
+  const predictions = await getPredictionsFromFastAPI(symbol, historicalData, period, sentimentData)
+  console.log(predictions) // Log the first prediction time
   return NextResponse.json({
     historical: historicalData.slice(-TIME_PERIODS[timeframe]), // Limit historical data to the specified timeframe
     predictions: predictions,
@@ -91,7 +83,7 @@ async function fetchHistoricalData(symbol: string): Promise<HistoricalDataPoint[
   const historicalData = Object.entries(timeSeries).map(([time, values]) => {
     const typedValues = values as Record<string, string>; // Explicitly type 'values'
     return {
-      time: time, // The date is in format YYYY-MM-DD
+      time: new Date(time), // The date is in format YYYY-MM-DD
       price: parseFloat(typedValues["4. close"]), // Close price of the forex pair
       ohlcv: {
         Open: parseFloat(typedValues["1. open"]),
@@ -145,18 +137,16 @@ async function fetchSentimentForCurrency(currency: string) {
 }
 
 interface PredictionResponse {
-  predictions: number[],
-  predictions_with_sentiment: number[],
+  LSTM_predictions: Prediction[],
+  LSTM_sentiment_predictions: Prediction[],
 }
 
 // Function to fetch predictions from FastAPI
-async function getPredictionsFromFastAPI(symbol: string, historicalData: HistoricalDataPoint[], timeframe: string, period: string, sentimentScore: number) {
+async function getPredictionsFromFastAPI(symbol: string, historicalData: HistoricalDataPoint[], period: string, sentimentScore: number) {
   const body = {
     data: historicalData.map((data) => data.ohlcv),
     sentimentScore: sentimentScore, // Sentiment data used as an input feature
   }
-
-  console.log('lengths', body.data.length)
   
   const response = await fetch(`${API_URL}/predict/${symbol}/${period}`, {
     method: "POST",
@@ -170,49 +160,16 @@ async function getPredictionsFromFastAPI(symbol: string, historicalData: Histori
     throw new Error("Failed to get predictions from FastAPI")
   }
 
-  const data = await response.json()
-  return formatPredictions(data, timeframe)
-}
-
-
-
-// Format predictions with sentiment-enhanced predictions and a clean version
-function formatPredictions(predictionData: PredictionResponse, timeframe: string) {
-  const now = new Date()
-  const formattedPredictions: { name: string; points: { time: string; value: number }[] }[] = []
-  const { predictions, predictions_with_sentiment } = predictionData
-
-  // Clean predictions (without sentiment)
-  const cleanPredictions = predictions.map((pred, index) => {
-    const date = new Date(now)
-    date.setHours(date.getHours() + (1 + index) * OFFSETS[timeframe]) // Add interval in hours
-
-    return {
-      time: date.toISOString(),
-      value: pred,
-    }
-  })
-
-  formattedPredictions.push({
-    name: `Machine Learning`,
-    points: cleanPredictions
-  })
-
-  // Sentiment-adjusted predictions
-  const sentimentAdjustedPredictions = predictions_with_sentiment.map((pred, index) => {
-    const date = new Date(now)
-    date.setHours(date.getHours() + (1 + index) * OFFSETS[timeframe]) // Add interval in hours
-
-    return {
-      time: date.toISOString(),
-      value: pred,
-    }
-  })
-
-  formattedPredictions.push({
-    name: `ML with Sentiment`,
-    points: sentimentAdjustedPredictions
-  })
+  const data: PredictionResponse = await response.json()
   
-  return formattedPredictions
+  return [
+    {
+      name: `Machine Learning`,
+      points: data.LSTM_predictions
+    },
+    {
+      name: `ML with Sentiment`,
+      points: data.LSTM_sentiment_predictions
+    },
+  ]
 }

@@ -5,7 +5,31 @@ import CurrencyNews from "@/components/currency-news"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 
+export interface DataPoint {
+  time: Date
+  price: number
+}
+
+export interface Prediction {
+  name: string
+  points: DataPoint[]
+}
+
 const formatSymbol = (symbol: string) => symbol.replace(/([A-Z]{3})([A-Z]{3})/, "$1/$2")
+
+// Fetch historical data and predictions
+const fetchData = async (symbol: string, timeframe: string) => {
+  try {
+    const response = await fetch(
+      `${SITE_URL}/api/symbols/${symbol}?timeframe=${timeframe}`
+    )
+    if (!response.ok) throw new Error("Failed to fetch data")
+    return await response.json()
+  } catch (error) {
+    console.error("Error fetching data:", error)
+    return null
+  }
+}
 
 export default async function SymbolPage({
   params,
@@ -18,21 +42,7 @@ export default async function SymbolPage({
   const { symbol } = await params
   const formattedSymbol = formatSymbol(symbol)
 
-  // Fetch historical data and predictions
-  const fetchData = async () => {
-    try {
-      const response = await fetch(
-        `${SITE_URL}/api/symbols/${symbol}?timeframe=${timeframe}`
-      )
-      if (!response.ok) throw new Error("Failed to fetch data")
-      return await response.json()
-    } catch (error) {
-      console.error("Error fetching data:", error)
-      return null
-    }
-  }
-
-  const data = await fetchData()
+  const data = await fetchData(symbol, timeframe)
 
   if (!data) {
     return <div>Failed to load data</div>
@@ -48,7 +58,7 @@ export default async function SymbolPage({
 
       <Card className="p-4">
 
-        <Chart data={historical} predictions={predictions} timeframe={timeframe} symbol={symbol}/>
+        <Chart historical={historical} predictions={predictions} timeframe={timeframe} symbol={symbol}/>
         
         <div className="flex justify-between items-center">
           <Timeframes selectedTimeframe={timeframe} />
