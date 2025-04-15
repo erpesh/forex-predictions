@@ -191,7 +191,7 @@ async function getPredictionsFromFastAPI(symbol: string, historicalData: Histori
   ]
 }
 
-function generateSentimentMessage(averageSentiment: number, newsData: any[]): string {
+function generateSentimentMessage(averageSentiment: number, newsData): string {
   let sentimentMessage = '';
   let sentimentLabel = '';
   let sentimentDetails = '';
@@ -227,11 +227,11 @@ function generateSentimentMessage(averageSentiment: number, newsData: any[]): st
   let newsMention = '';
   if (newsData.length > 0) {
     // Sort news articles by relevance score to find the most significant ones
-    const sortedNews = newsData.sort((a: any, b: any) => b.relevance - a.relevance);
+    const sortedNews = newsData.sort((a, b) => b.relevance - a.relevance);
     const significantNews = sortedNews.slice(0, 2); // Get top 2 most relevant news
     
     newsMention = '\nSignificant News: ';
-    significantNews.forEach((article: any) => {
+    significantNews.forEach((article) => {
       newsMention += `- "${article.title}" (Relevance: ${article.relevance}): ${article.summary}\n`;
     });
   }

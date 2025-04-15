@@ -252,7 +252,7 @@ const Chart = ({
                 <TabsContent value="predictions" className="space-y-2">
                   <h3 className="font-medium mb-1">Prediction Models</h3>
                   <div className="space-y-2">
-                    {predictions.map((model, index) => (
+                    {predictions.map((model) => (
                       <div key={model.name} className="flex items-center space-x-2">
                         <Checkbox
                           id={`model-${model.name}`}
@@ -373,7 +373,7 @@ const Chart = ({
             {/* Prediction lines with custom colors - only show visible models */}
             {predictions
               .filter((model) => visibleModels.includes(model.name))
-              .map((modelPrediction, index) => (
+              .map((modelPrediction) => (
                 <Line
                   key={modelPrediction.name}
                   type="linear"
