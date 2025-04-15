@@ -31,17 +31,9 @@ const MOVING_AVERAGES = [
   { period: 30, name: "30-Day MA", color: "#ec4899" },
 ]
 
-// Define prediction colors
-const PREDICTION_COLORS = [
-  "#22c55e", // Green
-  "#f97316", // Orange
-]
-
-function areDatesEqual(date1, date2) {
-  const d1 = new Date(date1);
-  const d2 = new Date(date2);
-
-  return d1.getTime() === d2.getTime();
+const PREDICTION_COLORS: { [key: string]: string } = {
+  "Machine Learning": "#22c55e",
+  "ML with Sentiment": "#f97316",
 }
 
 const Chart = ({
@@ -56,6 +48,8 @@ const Chart = ({
     14: false,
     30: false,
   })
+
+  console.log(predictions)
   const [selectedRange, setSelectedRange] = useState<[number, number] | null>(null)
 
   // State to track visible prediction models
@@ -268,7 +262,7 @@ const Chart = ({
                         <Label htmlFor={`model-${model.name}`} className="text-sm flex items-center">
                           <div
                             className="w-3 h-3 rounded-full mr-2"
-                            style={{ backgroundColor: PREDICTION_COLORS[index % PREDICTION_COLORS.length] }}
+                            style={{ backgroundColor: PREDICTION_COLORS[model.name] }}
                           ></div>
                           {model.name}
                         </Label>
@@ -384,7 +378,7 @@ const Chart = ({
                   key={modelPrediction.name}
                   type="linear"
                   dataKey={modelPrediction.name}
-                  stroke={PREDICTION_COLORS[index % PREDICTION_COLORS.length]}
+                  stroke={PREDICTION_COLORS[modelPrediction.name]}
                   strokeWidth={2}
                   dot={false}
                   strokeDasharray="5 5"
