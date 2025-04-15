@@ -58,13 +58,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ symb
   const period = formatTimeframeToPeriod(timeframe)
 
   const historicalData = await fetchHistoricalData(symbol)
-  const [sentimentData, newsData] = await fetchSentimentData(symbol) // Fetch sentiment for both currencies
+  const [sentimentData, newsData, sentimentMessage] = await fetchSentimentData(symbol) // Fetch sentiment for both currencies
   const predictions = await getPredictionsFromFastAPI(symbol, historicalData, period, sentimentData)
-  console.log(predictions) // Log the first prediction time
+
   return NextResponse.json({
     historical: historicalData.slice(-TIME_PERIODS[timeframe]), // Limit historical data to the specified timeframe
     predictions: predictions,
     newsData: newsData,
+    sentiment: {
+      score: sentimentData,
+      message: sentimentMessage,
+    },
   })
 }
 
@@ -112,7 +116,13 @@ async function fetchSentimentData(symbol: string) {
   const combinedSentiment = sentimentBaseCurrency.concat(sentimentQuoteCurrency)
   const averageSentiment = combinedSentiment.reduce((acc, val) => acc + val.sentiment_score, 0) / combinedSentiment.length
 
-  return [averageSentiment, {[baseCurrency]: baseFeed, [quoteCurrency]: quoteFeed}]
+  const sentimentMessage = generateSentimentMessage(averageSentiment, [...baseFeed, ...quoteFeed])
+
+  return [
+    averageSentiment, 
+    {[baseCurrency]: baseFeed, [quoteCurrency]: quoteFeed},
+    sentimentMessage
+  ]
 }
 
 // Fetch news sentiment for a single currency
@@ -133,7 +143,14 @@ async function fetchSentimentForCurrency(currency: string) {
     description: article.summary,
   })) || []
 
-  return [sentimentScores, data.feed]
+  const feed = data.feed.map(article => {
+    return {
+      ...article,
+      relevance: parseFloat(article.ticker_sentiment.find(t => t.ticker.includes(currency))?.relevance_score || 0).toFixed(2),
+    }
+  })
+
+  return [sentimentScores, feed]
 }
 
 interface PredictionResponse {
@@ -173,3 +190,53 @@ async function getPredictionsFromFastAPI(symbol: string, historicalData: Histori
     },
   ]
 }
+
+function generateSentimentMessage(averageSentiment: number, newsData: any[]): string {
+  let sentimentMessage = '';
+  let sentimentLabel = '';
+  let sentimentDetails = '';
+
+  // Define the sentiment categories based on the score ranges
+  if (averageSentiment >= 0.5) {
+    sentimentLabel = 'Very Bullish';
+    sentimentMessage = 'The sentiment is overwhelmingly positive. The market appears highly optimistic about the currency pair\'s future performance.';
+    sentimentDetails = 'Market sentiment is very strong, with positive expectations driving potential gains.';
+  } else if (averageSentiment >= 0.35) {
+    sentimentLabel = 'Bullish';
+    sentimentMessage = 'The sentiment is strongly positive, suggesting that investors are confident in the direction of the currency pair.';
+    sentimentDetails = 'There’s a clear upward trend in sentiment, with optimism prevailing in market outlook.';
+  } else if (averageSentiment >= 0.15) {
+    sentimentLabel = 'Somewhat Bullish';
+    sentimentMessage = 'The sentiment is mildly positive, indicating that there is some optimism in the market, but not a strong consensus.';
+    sentimentDetails = 'Investors are cautiously optimistic, but there’s still some hesitation in the market.';
+  } else if (averageSentiment > -0.15) {
+    sentimentLabel = 'Neutral';
+    sentimentMessage = 'The sentiment is neutral, suggesting that the market is unsure or balanced about the currency pair\'s future movements.';
+    sentimentDetails = 'There’s little directional movement in sentiment, with equal optimism and caution in the market.';
+  } else if (averageSentiment > -0.35) {
+    sentimentLabel = 'Somewhat Bearish';
+    sentimentMessage = 'The sentiment is somewhat negative, indicating that there’s some pessimism in the market, but it is not overwhelming.';
+    sentimentDetails = 'The outlook is cautious, with some concerns influencing the market’s expectations for the currency pair.';
+  } else {
+    sentimentLabel = 'Bearish';
+    sentimentMessage = 'The sentiment is strongly negative, suggesting a lack of confidence in the currency pair\'s performance.';
+    sentimentDetails = 'Market participants are concerned, with pessimistic views dominating the outlook for the currency pair.';
+  }
+
+  // Mention the most significant news (if any)
+  let newsMention = '';
+  if (newsData.length > 0) {
+    // Sort news articles by relevance score to find the most significant ones
+    const sortedNews = newsData.sort((a: any, b: any) => b.relevance - a.relevance);
+    const significantNews = sortedNews.slice(0, 2); // Get top 2 most relevant news
+    
+    newsMention = '\nSignificant News: ';
+    significantNews.forEach((article: any) => {
+      newsMention += `- "${article.title}" (Relevance: ${article.relevance}): ${article.summary}\n`;
+    });
+  }
+
+  // Return the full message with sentiment and news
+  return `The current sentiment for the currency pair is ${sentimentLabel}. ${sentimentMessage} ${newsMention}Details: ${sentimentDetails}`;
+}
+

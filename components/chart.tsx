@@ -22,6 +22,8 @@ import { Label } from "./ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { DataPoint, Prediction } from "@/app/symbols/[symbol]/page"
 
+const NUM_OF_PREDICTIONS = 5 // Number of prediction models to show
+
 // Define moving average periods
 const MOVING_AVERAGES = [
   { period: 7, name: "7-Day MA", color: "#f43f5e" },
@@ -35,15 +37,19 @@ const PREDICTION_COLORS = [
   "#f97316", // Orange
 ]
 
+function areDatesEqual(date1, date2) {
+  const d1 = new Date(date1);
+  const d2 = new Date(date2);
+
+  return d1.getTime() === d2.getTime();
+}
+
 const Chart = ({
   historical,
   predictions,
   timeframe,
   symbol,
 }: { historical: DataPoint[]; predictions: Prediction[]; timeframe: string; symbol?: string }) => {
-
-  console.log(historical)
-  console.log(predictions)
   const [isFullChart, setIsFullChart] = useState(false)
   const [showMovingAverages, setShowMovingAverages] = useState<{ [key: number]: boolean }>({
     7: false,
@@ -164,9 +170,18 @@ const Chart = ({
       (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime(),
     )
 
-    // Combine historical data and prediction data
-    console.log([...processedData, ...predictionPoints])
-    return [...processedData, ...predictionPoints]
+    // If prediction data matched historical data, merge the prediction points into the historical data
+    const pastPredictions = predictionPoints.slice(0, predictionPoints.length - NUM_OF_PREDICTIONS);
+    pastPredictions.reverse();
+    const futurePredictions = predictionPoints.slice(predictionPoints.length - NUM_OF_PREDICTIONS);
+
+    // Iterate processedData from the end to the beginning and merge corresponding past predictions into processed data values
+    for (let i = 0; i < processedData.length; i++) {
+      const j = processedData.length - 1 - i;
+      processedData[j] = {...processedData[j], ...pastPredictions[i]} // Create a shallow copy of the object
+    }
+
+    return [...processedData, ...futurePredictions]
   }, [historical, predictions, showMovingAverages, calculateMovingAverage, visibleModels])
 
   // Get statistics for the selected range or full data

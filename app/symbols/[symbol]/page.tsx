@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card"
 import Chart from "@/components/chart"
 import Timeframes from "./timeframes"
 import CurrencyNews from "@/components/currency-news"
+import { SentimentAnalysis } from "@/components/sentiment-analysis"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 
@@ -48,7 +49,7 @@ export default async function SymbolPage({
     return <div>Failed to load data</div>
   }
 
-  const { historical, predictions, newsData } = data
+  const { historical, predictions, newsData, sentiment } = data
 
   return (
     <div className="space-y-4">
@@ -64,6 +65,8 @@ export default async function SymbolPage({
           <Timeframes selectedTimeframe={timeframe} />
         </div>
       </Card>
+
+      <SentimentAnalysis message={sentiment.message} score={sentiment.score} />
 
       <CurrencyNews newsData={newsData} symbol={symbol}/>
     </div>

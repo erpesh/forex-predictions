@@ -35,6 +35,7 @@ interface News {
         ticker_sentiment_score: number
         ticker_sentiment_label: string
     }[]
+    relevance: number
 }
 
 interface NewsData {
@@ -60,25 +61,6 @@ const CurrencyNews = ({ newsData, symbol }: CurrencyNewsProps) => {
     const [searchQuery, setSearchQuery] = useState("")
     const [sortBy, setSortBy] = useState("latest")
     const [filterSentiment, setFilterSentiment] = useState("all")
-
-    // Format date from YYYYMMDDTHHMM to readable format
-    //   const formatDate = (dateString: string) => {
-    //     if (!dateString || dateString.length < 12) return "Unknown date"
-
-    //     try {
-    //       const year = dateString.substring(0, 4)
-    //       const month = dateString.substring(4, 6)
-    //       const day = dateString.substring(6, 8)
-    //       const hour = dateString.substring(9, 11)
-    //       const minute = dateString.substring(11, 13)
-
-    //       const date = new Date(`${year}-${month}-${day}T${hour}:${minute}:00`)
-    //       return date.toLocaleString()
-    //     } catch (e) {
-    //       console.error(e)
-    //       return "Invalid date"
-    //     }
-    //   }
 
     // Get time ago from date string
     const getTimeAgo = (dateString: string) => {
@@ -166,6 +148,8 @@ const CurrencyNews = ({ newsData, symbol }: CurrencyNewsProps) => {
                 return filtered.sort((a, b) => b.overall_sentiment_score - a.overall_sentiment_score)
             case "bearish":
                 return filtered.sort((a, b) => a.overall_sentiment_score - b.overall_sentiment_score)
+            case "relevance":
+                return filtered.sort((a, b) => b.relevance - a.relevance)
             default:
                 return filtered
         }
@@ -186,6 +170,7 @@ const CurrencyNews = ({ newsData, symbol }: CurrencyNewsProps) => {
                                 <SelectItem value="oldest">Oldest First</SelectItem>
                                 <SelectItem value="bullish">Most Bullish</SelectItem>
                                 <SelectItem value="bearish">Most Bearish</SelectItem>
+                                <SelectItem value="relevance">Most Relevant</SelectItem>
                             </SelectContent>
                         </Select>
                         <Select value={filterSentiment} onValueChange={setFilterSentiment}>
@@ -309,17 +294,14 @@ const CurrencyNews = ({ newsData, symbol }: CurrencyNewsProps) => {
                                                                         >
                                                                             {topicItem.topic}
                                                                             <span className="opacity-60 text-[10px]">
-                                                                                {Number.parseFloat(topicItem.relevance_score)}
+                                                                                {Number.parseFloat(topicItem.relevance_score).toFixed(2)}
                                                                             </span>
                                                                         </Badge>
                                                                     ))}
                                                                     {news.ticker_sentiment.some((t) => t.ticker.includes(currency)) && (
                                                                         <Badge variant="secondary" className="ml-auto">
                                                                             {currency} Relevance:{" "}
-                                                                            {(
-                                                                                news.ticker_sentiment.find((t) => t.ticker.includes(currency))
-                                                                                    ?.relevance_score || 0
-                                                                            )}
+                                                                            {news.relevance}
                                                                         </Badge>
                                                                     )}
                                                                 </CardFooter>
