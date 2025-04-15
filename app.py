@@ -73,7 +73,7 @@ async def predict(currency_pair: str, period: str, data: PredictionRequest, db: 
         df = pd.DataFrame(data_dict)
         
         last_data_value = df.iloc[-1]['Close']  # Get the last close value for the prediction
-        sentiment_score = data.sentimentScore 
+        sentiment_score = data.sentimentScore
 
         matched_date = match_date_to_period(period)
 

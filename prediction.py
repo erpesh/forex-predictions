@@ -45,13 +45,22 @@ def preprocess_data(mock_df, scaler):
     mock_sequences = mock_sequences.reshape((mock_sequences.shape[0], mock_sequences.shape[1], mock_sequences.shape[2]))
     return mock_sequences
 
-# Get multiple predictions
 def get_multiple_predictions(sequences, model, scaler, num_predictions=5, sentiment_score=None):
     predictions = []
     current_sequence = sequences.copy()
+
+    # Sentiment adjustment factor (a smaller, controlled range)
+    sentiment_bias_factor = 0.1  # Adjust how much sentiment influences the prediction
+
+    # Normalize the sentiment score to control how much impact it has
     if sentiment_score is not None:
-        # Adjust the last sequence based on sentiment score
-        current_sequence[:, -1, 3] = current_sequence[:, -1, 3] * sentiment_score
+        # We can adjust the sentiment score to make sure it's within a reasonable range
+        normalized_sentiment_score = max(min(sentiment_score, 1), -1)  # Keep between -1 and 1
+        
+        # Calculate the sentiment bias as a fraction of sentiment_score
+        sentiment_bias = normalized_sentiment_score * sentiment_bias_factor
+    else:
+        sentiment_bias = 0  # No sentiment, no bias
 
     for i in range(num_predictions):
         # Predict using the LSTM model
@@ -66,7 +75,10 @@ def get_multiple_predictions(sequences, model, scaler, num_predictions=5, sentim
 
         # Extract the 'Close' column from the inverse-transformed data
         prediction = dummy_array_inverse[:, 3][0]
-        predictions.append(prediction)
+
+        # Adjust the prediction based on sentiment bias (add or subtract a small bias)
+        adjusted_prediction = prediction + sentiment_bias
+        predictions.append(adjusted_prediction)
 
         # Update the current_sequence with the new prediction
         new_row = current_sequence[:, -1, :].copy()
