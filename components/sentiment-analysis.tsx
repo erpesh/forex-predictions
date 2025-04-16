@@ -12,6 +12,8 @@ import {
     ChevronUpIcon,
     TrendingUpIcon,
 } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { TwoSidedProgressBar } from "./ui/two-sided-progressbar"
 
 type SentimentLevel = "Very Bullish" | "Bullish" | "Somewhat Bullish" | "Neutral" | "Somewhat Bearish" | "Bearish"
 
@@ -78,29 +80,6 @@ export function SentimentAnalysis({ message, score }: SentimentAnalysisProps) {
 
     const { color, icon, label } = getSentimentDetails()
 
-    // Calculate sentiment score bar width and color
-    const getScoreBarStyles = () => {
-        // Normalize score to 0-100 range for the bar width
-        const normalizedScore = ((score + 1) / 2) * 100
-
-        let barColor = "bg-gray-400" // Neutral
-        if (sentiment === "Very Bullish")
-            barColor = "bg-green-600" // Very Bullish
-        else if (sentiment === "Bullish")
-            barColor = "bg-green-500" // Bullish
-        else if (sentiment === "Somewhat Bullish")
-            barColor = "bg-green-400" // Somewhat Bullish
-        else if (sentiment === "Somewhat Bearish")
-            barColor = "bg-amber-400" // Somewhat Bearish
-        else if (sentiment === "Bearish")
-            barColor = "bg-red-500" // Bearish
-
-        return {
-            width: `${normalizedScore}%`,
-            backgroundColor: barColor,
-        }
-    }
-
     return (
         <Card className="w-full shadow-sm hover:shadow-md transition-shadow duration-200">
             <CardHeader className="pb-2">
@@ -120,9 +99,9 @@ export function SentimentAnalysis({ message, score }: SentimentAnalysisProps) {
                             <span>Bearish</span>
                             <span>Bullish</span>
                         </div>
-                        <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full transition-all duration-500" style={getScoreBarStyles()}></div>
-                        </div>
+
+                        <TwoSidedProgressBar value={score} className="h-2" showValue={false} />
+
                         <div className="flex justify-center mt-1">
                             <span className="text-xs text-muted-foreground">
                                 Sentiment Score: {score > 0 ? "+" : ""}

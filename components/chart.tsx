@@ -49,7 +49,6 @@ const Chart = ({
     30: false,
   })
 
-  console.log(predictions)
   const [selectedRange, setSelectedRange] = useState<[number, number] | null>(null)
 
   // State to track visible prediction models

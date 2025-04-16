@@ -58,15 +58,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ symb
   const period = formatTimeframeToPeriod(timeframe)
 
   const historicalData = await fetchHistoricalData(symbol)
-  const [sentimentData, newsData, sentimentMessage] = await fetchSentimentData(symbol) // Fetch sentiment for both currencies
-  const predictions = await getPredictionsFromFastAPI(symbol, historicalData, period, sentimentData)
+  const [sentimentScore, newsData, sentimentMessage] = await fetchSentimentData(symbol) // Fetch sentiment for both currencies
+  const predictions = await getPredictionsFromFastAPI(symbol, historicalData, period, sentimentScore)
 
   return NextResponse.json({
     historical: historicalData.slice(-TIME_PERIODS[timeframe]), // Limit historical data to the specified timeframe
     predictions: predictions,
     newsData: newsData,
     sentiment: {
-      score: sentimentData,
+      score: sentimentScore,
       message: sentimentMessage,
     },
   })
@@ -109,17 +109,23 @@ async function fetchSentimentData(symbol: string) {
   const quoteCurrency = symbol.substring(3)
 
   // Fetch sentiment for base and quote currencies
-  const [sentimentBaseCurrency, baseFeed] = await fetchSentimentForCurrency(baseCurrency)
-  const [sentimentQuoteCurrency, quoteFeed] = await fetchSentimentForCurrency(quoteCurrency)
+  const baseFeed = await fetchSentimentForCurrency(baseCurrency)
+  const quoteFeed = await fetchSentimentForCurrency(quoteCurrency)
 
-  // Combine sentiment data by averaging scores
-  const combinedSentiment = sentimentBaseCurrency.concat(sentimentQuoteCurrency)
-  const averageSentiment = combinedSentiment.reduce((acc, val) => acc + val.sentiment_score, 0) / combinedSentiment.length
+  // Calculate weighted sentiment for base currency
+  const weightedBaseSentiment = calculateWeightedSentiment(baseFeed);
+  
+  // Calculate weighted sentiment for quote currency (invert sentiment for quote)
+  const weightedQuoteSentiment = calculateWeightedSentiment(quoteFeed) * -1; // Invert the quote currency sentiment
 
-  const sentimentMessage = generateSentimentMessage(averageSentiment, [...baseFeed, ...quoteFeed])
+  // Combine the weighted sentiments to get the overall sentiment score
+  const combinedSentiment = weightedBaseSentiment + weightedQuoteSentiment;
+
+  // Generate the sentiment message based on the combined sentiment score
+  const sentimentMessage = generateSentimentMessage(combinedSentiment, [...baseFeed, ...quoteFeed]);
 
   return [
-    averageSentiment, 
+    combinedSentiment, 
     {[baseCurrency]: baseFeed, [quoteCurrency]: quoteFeed},
     sentimentMessage
   ]
@@ -137,20 +143,33 @@ async function fetchSentimentForCurrency(currency: string) {
     return []
   }
 
-  const sentimentScores = data.feed?.map(article => ({
-    sentiment_score: article.overall_sentiment_score || 0,
-    title: article.title,
-    description: article.summary,
-  })) || []
-
   const feed = data.feed.map(article => {
     return {
       ...article,
-      relevance: parseFloat(article.ticker_sentiment.find(t => t.ticker.includes(currency))?.relevance_score || 0).toFixed(2),
+      relevance: parseFloat(article.ticker_sentiment.find(t => t.ticker === `FOREX:${currency}`)?.relevance_score) || 0,
+      sentiment_score : parseFloat(article.ticker_sentiment.find(t => t.ticker === `FOREX:${currency}`)?.ticker_sentiment_score) || 0,
     }
   })
 
-  return [sentimentScores, feed]
+  return feed
+}
+
+// Function to calculate the weighted sentiment score for each article
+function calculateWeightedSentiment(sentimentData) {
+  let totalSentiment = 0;
+  let totalWeight = 0;
+
+  sentimentData.forEach((article) => {
+    const sentimentScore = article.sentiment_score;
+    const relevance = parseFloat(article.relevance);
+
+    // Weighted sentiment calculation: relevance * sentiment score
+    totalSentiment += sentimentScore * relevance;
+    totalWeight += relevance;
+  });
+
+  // Return weighted sentiment (normalized by the total weight)
+  return totalWeight > 0 ? totalSentiment / totalWeight : 0;
 }
 
 interface PredictionResponse {
