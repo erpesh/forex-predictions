@@ -49,18 +49,11 @@ def get_multiple_predictions(sequences, model, scaler, num_predictions=5, sentim
     predictions = []
     current_sequence = sequences.copy()
 
-    # Sentiment adjustment factor (a smaller, controlled range)
-    sentiment_bias_factor = 0.1  # Adjust how much sentiment influences the prediction
+    # Sentiment adjustment factor based on sentiment score (scaled to range 0.9 to 1.1)
+    sentiment_factor = 1
 
-    # Normalize the sentiment score to control how much impact it has
     if sentiment_score is not None:
-        # We can adjust the sentiment score to make sure it's within a reasonable range
-        normalized_sentiment_score = max(min(sentiment_score, 1), -1)  # Keep between -1 and 1
-        
-        # Calculate the sentiment bias as a fraction of sentiment_score
-        sentiment_bias = normalized_sentiment_score * sentiment_bias_factor
-    else:
-        sentiment_bias = 0  # No sentiment, no bias
+        sentiment_factor = sentiment_score * 0.1 + 1
 
     for i in range(num_predictions):
         # Predict using the LSTM model
@@ -76,8 +69,8 @@ def get_multiple_predictions(sequences, model, scaler, num_predictions=5, sentim
         # Extract the 'Close' column from the inverse-transformed data
         prediction = dummy_array_inverse[:, 3][0]
 
-        # Adjust the prediction based on sentiment bias (add or subtract a small bias)
-        adjusted_prediction = prediction + sentiment_bias
+        # Adjust the prediction based on sentiment factor
+        adjusted_prediction = prediction * sentiment_factor
         predictions.append(adjusted_prediction)
 
         # Update the current_sequence with the new prediction
