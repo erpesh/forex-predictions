@@ -12,7 +12,6 @@ import {
     ChevronUpIcon,
     TrendingUpIcon,
 } from "lucide-react"
-import { cn } from "@/lib/utils"
 import { TwoSidedProgressBar } from "./ui/two-sided-progressbar"
 
 type SentimentLevel = "Very Bullish" | "Bullish" | "Somewhat Bullish" | "Neutral" | "Somewhat Bearish" | "Bearish"
