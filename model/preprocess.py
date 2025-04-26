@@ -53,12 +53,12 @@ def add_technical_indicators(data):
     return data
 
 # Normalize the data using MinMaxScaler
-def normalize_data(data):
+def normalize_data(data, symbol):
     scaler = MinMaxScaler()
     data_scaled = scaler.fit_transform(data[['Open', 'High', 'Low', 'Close', 'Volume', 'RSI', 'MACD', 'Signal_Line', 'Histogram']])
     data_normalized = pd.DataFrame(data_scaled, columns=['Open', 'High', 'Low', 'Close', 'Volume', 'RSI', 'MACD', 'Signal_Line', 'Histogram'], index=data.index)
     
-    joblib.dump(scaler, 'scaler.pkl') # Save the scaler for later use
+    joblib.dump(scaler, f'{symbol}/scaler.pkl') # Save the scaler for later use
     
     return data_normalized, scaler
 
@@ -101,7 +101,7 @@ def preprocess_data(data_directory: str, symbol: str, period: str, seq_length=30
     data = add_technical_indicators(data)
     print("After adding technical indicators. Shape:", data.shape)  # Debug
     
-    data_normalized, scaler = normalize_data(data)
+    data_normalized, scaler = normalize_data(data, symbol)
     print("After normalization. Shape:", data_normalized.shape)  # Debug
     
     X, y = create_sequences(data_normalized, seq_length)

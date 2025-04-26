@@ -6,11 +6,33 @@ from model.preprocess import preprocess_data
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 import matplotlib.pyplot as plt
 import math
+import os
 
 data_directory = r'C:\disk\uni\project\data'
 
+def save_accuracy_stats(symbol, mse_scores, rmse_scores, mae_scores, best_model_score, best_model_fold):
+    # Create directory for storing stats if it doesn't exist
+    if not os.path.exists(symbol):
+        os.makedirs(symbol)
+
+    # Define the file path
+    stats_file_path = os.path.join(symbol, 'accuracy_stats.txt')
+
+    # Write the accuracy stats to the file
+    with open(stats_file_path, 'w') as file:
+        file.write(f'Accuracy Stats for {symbol}:\n')
+        file.write(f'Average MSE: {np.mean(mse_scores)}\n')
+        file.write(f'Average RMSE: {np.mean(rmse_scores)}\n')
+        file.write(f'Average MAE: {np.mean(mae_scores)}\n')
+        file.write(f'Best Model from Fold {best_model_fold + 1} with MSE: {best_model_score}\n')
+        file.write("\n")
+
 def train_lstm_model(symbol: str, period: str):
     # Load and preprocess data from the folder
+    # Create directory named after the symbol if it doesn't exist
+    if not os.path.exists(symbol):
+        os.makedirs(symbol)
+    
     X, y, scaler = preprocess_data(data_directory, symbol, period)
 
     # Initialize K-fold Cross Validation
@@ -62,12 +84,18 @@ def train_lstm_model(symbol: str, period: str):
         plt.xlabel('Time')
         plt.ylabel('Close Price')
         plt.legend()
-        plt.show()
+
+        # Save the plot for the fold
+        plt.savefig(f'{symbol}/Fold_{fold + 1}.png')
+        plt.close()  # Close the plot after saving to avoid overlapping in the next iteration
+
+    # Save accuracy stats to a file
+    save_accuracy_stats(symbol, mse_scores, rmse_scores, mae_scores, best_model_score, best_model_fold)
 
     print(f'Average MSE: {np.mean(mse_scores)}')
     print(f'Average RMSE: {np.mean(rmse_scores)}')
     print(f'Average MAE: {np.mean(mae_scores)}')
 
     # Save the best model
-    best_model.save(f'model.keras')
+    best_model.save(f'{symbol}/model.keras')
     print(f"Best Model is from Fold {best_model_fold + 1} with MSE: {best_model_score}")
