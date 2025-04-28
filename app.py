@@ -47,6 +47,38 @@ async def get_currency_pairs(db: Session = Depends(get_db)):
         return [pair.name for pair in currency_pairs]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching currency pairs: {str(e)}")
+    
+@app.post("/symbol")
+async def add_currency_pair(payload: dict, db: Session = Depends(get_db)):
+    try:
+        symbol = payload.get("symbol")
+        periods = payload.get("periods", [])
+
+        if not symbol:
+            raise HTTPException(status_code=400, detail="Symbol is required")
+
+        # Check if the currency pair already exists
+        existing_pair = service.get_currency_pair(db, symbol)
+        if existing_pair:
+            raise HTTPException(status_code=400, detail="Currency pair already exists")
+        
+        # Create new currency pair
+        new_pair = models.CurrencyPair(name=symbol)
+        db.add(new_pair)
+        db.commit()
+        db.refresh(new_pair)
+
+        # Add periods to the new currency pair
+        for period in periods:
+            period_record = service.get_period(db, period)
+            if period_record:
+                new_pair.periods.append(period_record)
+
+        db.commit()
+        return {"message": "Currency pair added successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error adding currency pair: {str(e)}")
+
 
 @app.post("/predict/{currency_pair}/{period}")
 async def predict(currency_pair: str, period: str, data: PredictionRequest, db: Session = Depends(get_db)):
