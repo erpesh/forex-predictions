@@ -54,8 +54,6 @@ export default async function SymbolPage({
   }
 
   const { historical, predictions, newsData, sentiment } = data
-  console.log("Historical Data:", historical)
-  console.log("Predictions:", predictions)
   const averagePrice = historical.reduce((acc, point) => acc + point.price, 0) / historical.length
   const stats = calculateStats(historical, predictions)
 

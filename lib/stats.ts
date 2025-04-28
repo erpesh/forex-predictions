@@ -34,12 +34,10 @@ function meanAbsoluteError(actual: number[], predicted: number[]): number {
 }
 
 function calculateDirectionAccuracy(actual: number[], predicted: number[]): number {
-    console.log("Actual:", actual);
-    console.log("Predicted:", predicted);
     let correctDirectionCount = 0;
     for (let i = 1; i < actual.length; i++) {
         const actualDirection = Math.sign(actual[i] - actual[i - 1]); // 1 for up, -1 for down, 0 for no change
-        const predictedDirection = Math.sign(predicted[i] - predicted[i - 1]); // Same logic for prediction
+        const predictedDirection = Math.sign(predicted[i] - actual[i - 1]); // Same logic for prediction
         if (actualDirection === predictedDirection) {
             correctDirectionCount++;
         }
@@ -65,7 +63,6 @@ function calculateR2(actual: number[], predicted: number[]): number {
 export function calculateStats(actualData: DataPoint[], predictions: Prediction[]) {
     // Filter predictions to only have the dates that match actual data
     const filteredPredictions = filterDataByDate(actualData, predictions);
-    console.log("Filtered Predictions:", filteredPredictions);
 
     const mseScores: number[] = [];
     const rmseScores: number[] = [];
