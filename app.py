@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.responses import FileResponse
 from requests import get
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -47,6 +48,10 @@ async def get_currency_pairs(db: Session = Depends(get_db)):
         return [pair.name for pair in currency_pairs]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching currency pairs: {str(e)}")
+    
+@app.get("/download-db")
+def download_db():
+    return FileResponse("predictions.db", media_type="application/octet-stream", filename="predictions.db")
     
 @app.post("/symbol")
 async def add_currency_pair(payload: dict, db: Session = Depends(get_db)):
