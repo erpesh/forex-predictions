@@ -56,8 +56,8 @@ def get_all_predictions(db: Session, currency_pair_id: int, period_id: int, mode
 
 # Update prediction
 def update_prediction(db: Session, existing_prediction, new_value: float, last_live_value: float):
-    existing_prediction.value = new_value
-    existing_prediction.last_live_value = last_live_value
+    existing_prediction.value = float(new_value)
+    existing_prediction.last_live_value = float(last_live_value)
     db.commit()
     db.refresh(existing_prediction)
     return existing_prediction
@@ -68,8 +68,8 @@ def create_prediction(db: Session, currency_pair_id: int, period_id: int, predic
         currency_pair_id=currency_pair_id,
         period_id=period_id,
         prediction_model_id=prediction_model_id,
-        value=value,
-        last_live_value=last_live_value,
+        value=float(value),
+        last_live_value=float(last_live_value),
         date=match_date
     )
     db.add(new_prediction)
@@ -80,13 +80,13 @@ def create_prediction(db: Session, currency_pair_id: int, period_id: int, predic
 # Create N predictions with start date and period
 def create_n_predictions(db: Session, currency_pair_id: int, period_id: int, prediction_model_id: int, values: list, last_live_value: float, match_dates: list):
     predictions = []
-    for value, last_live_value, match_date in zip(values, last_live_values, match_dates):
+    for value, match_date in zip(values, match_dates):
         new_prediction = models.Prediction(
             currency_pair_id=currency_pair_id,
             period_id=period_id,
             prediction_model_id=prediction_model_id,
-            value=value,
-            last_live_value=last_live_value,
+            value=float(value),
+            last_live_value=float(last_live_value),
             date=match_date
         )
         db.add(new_prediction)
