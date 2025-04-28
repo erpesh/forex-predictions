@@ -56,7 +56,6 @@ export default async function SymbolPage({
   const { historical, predictions, newsData, sentiment } = data
   const averagePrice = historical.reduce((acc, point) => acc + point.price, 0) / historical.length
   const stats = calculateStats(historical, predictions)
-
   return (
     <div className="space-y-4">
       <div className="flex gap-2 items-end">
@@ -77,16 +76,15 @@ export default async function SymbolPage({
 
       <div className={"flex gap-4"}>
         <ModelStatsCard
-          modelName="LSTM"
-          description="Long Short-Term Memory Neural Network"
           timeframe="1m"
+          currencyPair={symbol}
           averageValue={averagePrice}
-          mse={stats.mse[0]}
-          rmse={stats.rmse[0]}
-          mae={stats.mae[0]}
-          mape={stats.mape[0]}
-          r2={stats.r2[0]}
-          directionAccuracy={stats.directionAccuracy[0]}
+          models={predictions.map((prediction, index) => ({
+            name: prediction.name,
+            mae: stats.mae[index],
+            mse: stats.mse[index],
+            directionAccuracy: stats.directionAccuracy[index],
+          }))}
         />
         <SentimentAnalysis message={sentiment.message} score={sentiment.score} />
       </div>

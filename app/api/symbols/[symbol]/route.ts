@@ -196,6 +196,8 @@ async function getPredictionsFromFastAPI(symbol: string, historicalData: Histori
   }
 
   const data: PredictionResponse = await response.json()
+
+  console.log("Predictions from FastAPI:", data)
   
   return [
     {
