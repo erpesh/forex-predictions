@@ -22,6 +22,8 @@ interface ModelStatsProps {
   directionAccuracy?: number
 }
 
+type TabOptions = "basic" | "advanced"
+
 export function ModelStatsCard({
   modelName,
   description,
@@ -35,7 +37,7 @@ export function ModelStatsCard({
   r2,
   directionAccuracy,
 }: ModelStatsProps) {
-  const [activeTab, setActiveTab] = useState<"basic" | "advanced">("basic")
+  const [activeTab, setActiveTab] = useState<TabOptions>("basic")
 
   // Calculate scale factor based on the average value
   // Using 1.0 as the reference (similar to EURUSD)
@@ -301,7 +303,7 @@ export function ModelStatsCard({
         </div>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="basic" value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
+        <Tabs defaultValue="basic" value={activeTab} onValueChange={(value) => setActiveTab(value as TabOptions)}>
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="basic">Basic Metrics</TabsTrigger>
             <TabsTrigger value="advanced">Advanced Metrics</TabsTrigger>
@@ -514,7 +516,7 @@ export function ModelStatsCard({
                         </p>
                         <p className="mt-2">
                           <span className="font-medium">Interpretation:</span> Values range from 0 to 1, with 1
-                          indicating perfect prediction. A value of 0 means the model doesn't explain any of the
+                          indicating perfect prediction. A value of 0 means the model doesn&apos;t explain any of the
                           variance.
                         </p>
                       </PopoverContent>

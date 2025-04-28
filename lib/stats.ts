@@ -67,17 +67,17 @@ export function calculateStats(actualData: DataPoint[], predictions: Prediction[
     const filteredPredictions = filterDataByDate(actualData, predictions);
     console.log("Filtered Predictions:", filteredPredictions);
 
-    let mseScores: number[] = [];
-    let rmseScores: number[] = [];
-    let maeScores: number[] = [];
-    let directionAccuracies: number[] = [];
-    let mapeScores: number[] = [];
-    let r2Scores: number[] = [];
+    const mseScores: number[] = [];
+    const rmseScores: number[] = [];
+    const maeScores: number[] = [];
+    const directionAccuracies: number[] = [];
+    const mapeScores: number[] = [];
+    const r2Scores: number[] = [];
 
     // Loop through each model's predictions and calculate metrics
     filteredPredictions.forEach((predictionModel) => {
-        let actualPrices: number[] = [];
-        let predictedPrices: number[] = [];
+        const actualPrices: number[] = [];
+        const predictedPrices: number[] = [];
 
         predictionModel.points.forEach((point) => {
             // Find the corresponding actual value
