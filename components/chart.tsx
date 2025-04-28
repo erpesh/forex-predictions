@@ -14,7 +14,7 @@ import {
   Brush,
   ReferenceLine,
 } from "recharts"
-import { Maximize2, Camera, TrendingUp, LineChartIcon } from "lucide-react"
+import { Maximize2, Camera, TrendingUp, LineChartIcon, InfoIcon } from "lucide-react"
 import { Button } from "./ui/button"
 import { Checkbox } from "./ui/checkbox"
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
@@ -111,10 +111,8 @@ const Chart = ({
         return `${date.toLocaleDateString("en-US", { weekday: "short" })} ${date.toLocaleTimeString("en-US", { hour: "2-digit" })}`
       case "1m":
         return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-      case "6m":
+      case "3m":
         return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-      case "1y":
-        return date.toLocaleDateString("en-US", { month: "short", year: "2-digit" })
       default:
         return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
     }
@@ -134,16 +132,17 @@ const Chart = ({
       }
     })
 
+    const historicalTimesSet = new Set(historical.map((point) => point.time))
+
     // Create a map to store all prediction points by time
     const predictionsByTime = new Map()
 
-    // Process each model's predictions to start from the same point
-    // Only include visible models
     predictions
       .filter((model) => visibleModels.includes(model.name))
       .forEach((modelPrediction) => {
         // Sort prediction points by time
-        const sortedPoints = [...modelPrediction.points].sort(
+        const predictionPoints = modelPrediction.points.filter((point, index) => historicalTimesSet.has(point.time) || index >= modelPrediction.points.length - NUM_OF_PREDICTIONS)
+        const sortedPoints = [...predictionPoints].sort(
           (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime(),
         )
 
@@ -157,7 +156,6 @@ const Chart = ({
           predictionsByTime.get(point.time)[modelPrediction.name] = point.value
         })
       })
-
     // Convert the map to an array and sort by time
     const predictionPoints = Array.from(predictionsByTime.values()).sort(
       (a, b) => new Date(a.time).getTime() - new Date(b.time).getTime(),
@@ -171,7 +169,7 @@ const Chart = ({
     // Iterate processedData from the end to the beginning and merge corresponding past predictions into processed data values
     for (let i = 0; i < processedData.length; i++) {
       const j = processedData.length - 1 - i;
-      processedData[j] = {...processedData[j], ...pastPredictions[i]} // Create a shallow copy of the object
+      processedData[j] = { ...processedData[j], ...pastPredictions[i] } // Create a shallow copy of the object
     }
 
     return [...processedData, ...futurePredictions]
@@ -271,7 +269,46 @@ const Chart = ({
                 </TabsContent>
 
                 <TabsContent value="indicators" className="space-y-2">
-                  <h3 className="font-medium mb-1">Moving Averages</h3>
+                  <div className="flex items-center gap-1 mb-1">
+                    <h3 className="font-medium">Moving Averages</h3>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <InfoIcon className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 p-3 text-sm">
+                        <p className="font-medium">Moving Average</p>
+                        <p className="mt-1 text-muted-foreground">
+                          A moving average is a technical indicator that smooths price data by creating a constantly
+                          updated average price over a specific time period.
+                        </p>
+                        <p className="mt-2 text-muted-foreground">
+                          <span className="font-medium">How it works:</span> Each point on a moving average line
+                          represents the average price over the previous N periods (e.g., 7, 14, or 30 days).
+                        </p>
+                        <p className="mt-2 text-muted-foreground">
+                          <span className="font-medium">Purpose:</span> Moving averages help identify trends by
+                          filtering out short-term price fluctuations and noise.
+                        </p>
+                        <div className="mt-2">
+                          <p className="font-medium text-xs">Common periods:</p>
+                          <ul className="list-disc list-inside text-xs text-muted-foreground mt-1">
+                            <li>
+                              <span className="font-medium">7-Day MA:</span> More responsive to recent price changes,
+                              good for short-term trends
+                            </li>
+                            <li>
+                              <span className="font-medium">14-Day MA:</span> Balanced sensitivity, commonly used for
+                              medium-term analysis
+                            </li>
+                            <li>
+                              <span className="font-medium">30-Day MA:</span> Smoother line that shows longer-term
+                              trends
+                            </li>
+                          </ul>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                   <div className="space-y-2">
                     {MOVING_AVERAGES.map((ma) => (
                       <div key={ma.period} className="flex items-center space-x-2">

@@ -8,7 +8,7 @@ const timeframes = [
     { label: "1D", value: "1d", disabled: true },
     { label: "5D", value: "5d", disabled: true },
     { label: "1M", value: "1m", disabled: false },
-    { label: "6M", value: "6m", disabled: false },
+    { label: "3M", value: "3m", disabled: false },
 ]
 
 export default function Timeframes({ selectedTimeframe }: { selectedTimeframe: string }) {

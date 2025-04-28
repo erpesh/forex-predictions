@@ -33,8 +33,6 @@ interface SentimentAnalysisProps {
 export function SentimentAnalysis({ message, score }: SentimentAnalysisProps) {
     const sentiment = sentimentLevelByScore(score || 0) // Default to Neutral if score is undefined
 
-    const [expanded, setExpanded] = useState(false)
-
     // Get sentiment color and icon
     const getSentimentDetails = () => {
         switch (sentiment) {
@@ -112,20 +110,7 @@ export function SentimentAnalysis({ message, score }: SentimentAnalysisProps) {
 
                 {/* Sentiment Message */}
                 <div className="text-sm leading-relaxed">
-                    <p className={expanded ? "" : "line-clamp-3"}>{message}</p>
-                    {message.length > 180 && (
-                        <Button variant="ghost" size="sm" className="mt-2 h-8 text-xs" onClick={() => setExpanded(!expanded)}>
-                            {expanded ? (
-                                <>
-                                    Show Less <ChevronUpIcon className="ml-1 h-3 w-3" />
-                                </>
-                            ) : (
-                                <>
-                                    Read More <ChevronDownIcon className="ml-1 h-3 w-3" />
-                                </>
-                            )}
-                        </Button>
-                    )}
+                    <p>{message}</p>
                 </div>
             </CardContent>
         </Card>

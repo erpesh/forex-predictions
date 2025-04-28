@@ -10,6 +10,7 @@ import { ScrollArea } from "./ui/scroll-area"
 import { Separator } from "./ui/separator"
 import { Clock, ExternalLink, Search, TrendingUp, TrendingDown, Minus } from "lucide-react"
 import Image from "next/image"
+import { getCurrencyName } from "@/lib/utils"
 
 interface TopicItem {
     topic: string
@@ -202,7 +203,7 @@ const CurrencyNews = ({ newsData, symbol }: CurrencyNewsProps) => {
                     <TabsList className="w-full mb-4">
                         {currencies.map((currency) => (
                             <TabsTrigger key={currency} value={currency} className="flex-1">
-                                {currency} News
+                                {getCurrencyName(currency)} News
                                 {newsData[currency] && (
                                     <Badge variant="outline" className="ml-2">
                                         {newsData[currency].length}
