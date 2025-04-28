@@ -28,8 +28,7 @@ const TIME_PERIODS: Record<string, number> = {
   "1d": 24,
   "5d": 120,
   "1m": 30,
-  "6m": 180,
-  "1y": 365,
+  "3m": 90,
 }
 
 const formatTimeframeToPeriod = (timeframe: string) => {
@@ -40,7 +39,7 @@ const formatTimeframeToPeriod = (timeframe: string) => {
       return 'h4'
     case '1m':
       return 'd1'
-    case '6m':
+    case '3m':
       return 'd1'
     default:
       return 'd1' 
@@ -87,7 +86,7 @@ async function fetchHistoricalData(symbol: string): Promise<HistoricalDataPoint[
   const historicalData = Object.entries(timeSeries).map(([time, values]) => {
     const typedValues = values as Record<string, string>; // Explicitly type 'values'
     return {
-      time: new Date(time), // The date is in format YYYY-MM-DD
+      time: (new Date(time)).toISOString().slice(0, -5), // The date is in format YYYY-MM-DD
       price: parseFloat(typedValues["4. close"]), // Close price of the forex pair
       ohlcv: {
         Open: parseFloat(typedValues["1. open"]),
