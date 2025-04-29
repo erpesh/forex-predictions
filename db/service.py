@@ -6,27 +6,27 @@ from db import models
 def get_currency_pair(db: Session, currency_pair_name: str):
     return db.query(models.CurrencyPair).filter(
         models.CurrencyPair.name == currency_pair_name,
-        models.CurrencyPair.enabled == '1'
+        models.CurrencyPair.enabled == True
     ).first()
     
 # Get all enabled currency pairs
 def get_all_currency_pairs(db: Session):
     return db.query(models.CurrencyPair).filter(
-        models.CurrencyPair.enabled == '1'
+        models.CurrencyPair.enabled == True
     ).all()
 
 # Get period by name and check if enabled
 def get_period(db: Session, period_name: str):
     return db.query(models.Period).filter(
         models.Period.name == period_name,
-        models.Period.enabled == '1'
+        models.Period.enabled == True
     ).first()
     
 # Get prediction model by name and check if enabled
 def get_prediction_model(db: Session, model_name: str):
     return db.query(models.PredictionModel).filter(
         models.PredictionModel.name == model_name,
-        models.PredictionModel.enabled == '1'
+        models.PredictionModel.enabled == True
     ).first()
 
 # Get prediction by date
