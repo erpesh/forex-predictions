@@ -4,7 +4,7 @@ import Timeframes from "./timeframes"
 import CurrencyNews from "@/components/currency-news"
 import { SentimentAnalysis } from "@/components/sentiment-analysis"
 import { ModelStatsCard } from "@/components/model-stats"
-import { splitSymbol, getCurrencyName } from "@/lib/utils"
+import {splitSymbol, getCurrencyName, dateDiff} from '@/lib/utils';
 import { calculateStats } from "@/lib/stats"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
@@ -55,7 +55,11 @@ export default async function SymbolPage({
 
   const { historical, predictions, newsData, sentiment } = data
   const averagePrice = historical.reduce((acc, point) => acc + point.price, 0) / historical.length
-  const stats = calculateStats(historical, predictions)
+  const stats = calculateStats(historical, predictions);
+  const predictionsTimeframe = dateDiff(predictions[0].points[0].time, predictions[0].points[predictions[0].points.length - 6].time)
+
+  console.log(stats)
+
   return (
     <div className="space-y-4">
       <div className="flex gap-2 items-end">
@@ -76,7 +80,7 @@ export default async function SymbolPage({
 
       <div className={"flex gap-4"}>
         <ModelStatsCard
-          timeframe="1m"
+          timeframe={`${predictionsTimeframe.value} ${predictionsTimeframe.unit}`}
           currencyPair={symbol}
           averageValue={averagePrice}
           models={predictions.map((prediction, index) => ({

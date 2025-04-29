@@ -14,7 +14,7 @@ import {
   Brush,
   ReferenceLine,
 } from "recharts"
-import { Maximize2, Camera, TrendingUp, LineChartIcon, InfoIcon } from "lucide-react"
+import { Maximize2, TrendingUp, LineChartIcon, InfoIcon } from "lucide-react"
 import { Button } from "./ui/button"
 import { Checkbox } from "./ui/checkbox"
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
@@ -355,10 +355,6 @@ const Chart = ({
               </div>
             </PopoverContent>
           </Popover>
-
-          <Button variant="outline" size="icon" disabled>
-            <Camera className="h-4 w-4" />
-          </Button>
           <Button variant="outline" size="icon" onClick={() => setIsFullChart(!isFullChart)}>
             <Maximize2 className="h-4 w-4" />
           </Button>

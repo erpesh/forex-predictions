@@ -1,3 +1,4 @@
+import { ModelStatsSkeleton } from "@/components/model-stats-skeleton"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function Loading() {
@@ -42,41 +43,45 @@ export default function Loading() {
         </div>
       </div>
 
-      {/* Sentiment Analysis Card */}
-      <div className="rounded-lg border p-4 space-y-4">
-        {/* Sentiment header */}
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-5 w-5" /> {/* Icon */}
-            <Skeleton className="h-6 w-40" /> {/* Market Sentiment text */}
+      <div className={"grid grid-cols-2 gap-4"}>
+        {/* Model Stats Card */}
+        <ModelStatsSkeleton />
+        {/* Sentiment Analysis Card */}
+        <div className="rounded-lg border p-4 space-y-4">
+          {/* Sentiment header */}
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-5 w-5" /> {/* Icon */}
+              <Skeleton className="h-6 w-40" /> {/* Market Sentiment text */}
+            </div>
+            <Skeleton className="h-6 w-20" /> {/* Neutral indicator */}
           </div>
-          <Skeleton className="h-6 w-20" /> {/* Neutral indicator */}
-        </div>
 
-        {/* Sentiment meter */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <Skeleton className="h-4 w-16" /> {/* Bearish */}
-            <Skeleton className="h-4 w-16" /> {/* Bullish */}
+          {/* Sentiment meter */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <Skeleton className="h-4 w-16" /> {/* Bearish */}
+              <Skeleton className="h-4 w-16" /> {/* Bullish */}
+            </div>
+            <Skeleton className="h-6 w-full rounded-full" /> {/* Sentiment bar */}
+            <div className="flex justify-center">
+              <Skeleton className="h-4 w-32" /> {/* Sentiment score */}
+            </div>
           </div>
-          <Skeleton className="h-6 w-full rounded-full" /> {/* Sentiment bar */}
-          <div className="flex justify-center">
-            <Skeleton className="h-4 w-32" /> {/* Sentiment score */}
+
+          {/* Sentiment analysis text */}
+          <div className="space-y-2 pt-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-[90%]" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-[95%]" />
           </div>
-        </div>
 
-        {/* Sentiment analysis text */}
-        <div className="space-y-2 pt-2">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-[90%]" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-[95%]" />
-        </div>
-
-        {/* Read more button */}
-        <div className="flex items-center justify-center pt-2">
-          <Skeleton className="h-8 w-28 rounded-md" />
+          {/* Read more button */}
+          <div className="flex items-center justify-center pt-2">
+            <Skeleton className="h-8 w-28 rounded-md" />
+          </div>
         </div>
       </div>
     </div>
