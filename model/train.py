@@ -37,8 +37,6 @@ def save_accuracy_stats(symbol, mse_scores, rmse_scores, mae_scores, direction_a
         file.write("\n")
 
 def train_lstm_model(symbol: str, period: str):
-    # Load and preprocess data from the folder
-    # Create directory named after the symbol if it doesn't exist
     if not os.path.exists(symbol):
         os.makedirs(symbol)
     
