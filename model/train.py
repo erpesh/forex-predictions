@@ -3,14 +3,14 @@ from sklearn.model_selection import KFold
 from keras.models import load_model
 from model.model import create_lstm_model
 from model.preprocess import preprocess_data
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 import matplotlib.pyplot as plt
 import math
 import os
 
 data_directory = r'C:\disk\uni\project\data'
 
-def save_accuracy_stats(symbol, mse_scores, rmse_scores, mae_scores, best_model_score, best_model_fold):
+def save_accuracy_stats(symbol, mse_scores, rmse_scores, mae_scores, direction_accuracies, mape_scores, r2_scores, best_model_score, best_model_fold):
     # Create directory for storing stats if it doesn't exist
     if not os.path.exists(symbol):
         os.makedirs(symbol)
@@ -24,7 +24,16 @@ def save_accuracy_stats(symbol, mse_scores, rmse_scores, mae_scores, best_model_
         file.write(f'Average MSE: {np.mean(mse_scores)}\n')
         file.write(f'Average RMSE: {np.mean(rmse_scores)}\n')
         file.write(f'Average MAE: {np.mean(mae_scores)}\n')
+        file.write(f'Average Direction Accuracy: {np.mean(direction_accuracies)}\n')
+        file.write(f'Average MAPE: {np.mean(mape_scores)}\n')
+        file.write(f'Average R²: {np.mean(r2_scores)}\n')
         file.write(f'Best Model from Fold {best_model_fold + 1} with MSE: {best_model_score}\n')
+        file.write("\n")
+
+        # Store fold-wise accuracy stats
+        file.write("Fold-wise Accuracy Stats:\n")
+        for i in range(len(mse_scores)):
+            file.write(f"Fold {i + 1} - MSE: {mse_scores[i]}, RMSE: {rmse_scores[i]}, MAE: {mae_scores[i]}, Direction Accuracy: {direction_accuracies[i]}, MAPE: {mape_scores[i]}, R²: {r2_scores[i]}\n")
         file.write("\n")
 
 def train_lstm_model(symbol: str, period: str):
@@ -41,6 +50,9 @@ def train_lstm_model(symbol: str, period: str):
     mse_scores = []
     rmse_scores = []
     mae_scores = []
+    direction_accuracies = []
+    mape_scores = []
+    r2_scores = []
     best_model = None
     best_model_score = float('inf')  # We will minimize this score
 
@@ -70,6 +82,18 @@ def train_lstm_model(symbol: str, period: str):
         rmse_scores.append(rmse)
         mae_scores.append(mae)
 
+        # Direction accuracy
+        direction_accuracy = np.mean(np.sign(y_pred_rescaled) == np.sign(y_test_rescaled))
+        direction_accuracies.append(direction_accuracy)
+
+        # MAPE
+        mape = np.mean(np.abs((y_test_rescaled - y_pred_rescaled) / y_test_rescaled)) * 100
+        mape_scores.append(mape)
+
+        # R²
+        r2 = r2_score(y_test_rescaled, y_pred_rescaled)
+        r2_scores.append(r2)
+
         # Select the best model based on MSE, RMSE, or MAE
         if mse < best_model_score:
             best_model_score = mse
@@ -90,11 +114,14 @@ def train_lstm_model(symbol: str, period: str):
         plt.close()  # Close the plot after saving to avoid overlapping in the next iteration
 
     # Save accuracy stats to a file
-    save_accuracy_stats(symbol, mse_scores, rmse_scores, mae_scores, best_model_score, best_model_fold)
+    save_accuracy_stats(symbol, mse_scores, rmse_scores, mae_scores, direction_accuracies, mape_scores, r2_scores, best_model_score, best_model_fold)
 
     print(f'Average MSE: {np.mean(mse_scores)}')
     print(f'Average RMSE: {np.mean(rmse_scores)}')
     print(f'Average MAE: {np.mean(mae_scores)}')
+    print(f'Average Direction Accuracy: {np.mean(direction_accuracies)}')
+    print(f'Average MAPE: {np.mean(mape_scores)}')
+    print(f'Average R²: {np.mean(r2_scores)}')
 
     # Save the best model
     best_model.save(f'{symbol}/model.keras')
