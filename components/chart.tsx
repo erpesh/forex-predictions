@@ -361,7 +361,7 @@ const Chart = ({
         </div>
       </div>
 
-      <div className={`${isFullChart ? "flex-grow" : "h-[400px]"} mb-4`}>
+      <div className={`${isFullChart ? "h-full pb-10" : "h-[400px]"} mb-4`}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
