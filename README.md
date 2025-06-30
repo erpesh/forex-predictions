@@ -91,10 +91,5 @@ See [`ml-training/README.md`](ml-training/README.md) for training and data prepa
 - REST API for predictions, currency pairs, and database management
 - See [`server/README.md`](server/README.md) for endpoints and usage
 
----
-
-## Contributing
-Pull requests and issues are welcome! Please see the individual READMEs for contribution guidelines for each part.
-
 ## License
 MIT License. See `LICENSE` file for details.
