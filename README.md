@@ -48,7 +48,7 @@ This project implements a deep learning pipeline for predicting Forex currency p
 ## Output
 
 - Trained models and scalers saved per symbol.
-- Evaluation statistics and prediction plots for each fold in `stats/<SYMBOL>/`.
+- Evaluation statistics and prediction plots for each fold are saved in [`stats/<SYMBOL>/`](stats/).
 
 ## Requirements
 
