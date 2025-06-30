@@ -46,8 +46,8 @@ const formatTimeframeToPeriod = (timeframe: string) => {
   }
 }
 
-const ALPHA_VANTAGE_API_KEY = process.env.NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY
-const API_URL = process.env.NEXT_PUBLIC_API_URL
+const ALPHA_VANTAGE_API_KEY = process.env.ALPHA_VANTAGE_API_KEY
+const API_URL = process.env.API_URL
 
 export async function GET(request: Request, { params }: { params: Promise<{ symbol: string }> }) {
   const { symbol } = await params;
