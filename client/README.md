@@ -29,7 +29,7 @@ This app requires an [Alpha Vantage](https://www.alphavantage.co/support/#api-ke
 - Get your API key here: [Alpha Vantage Get API Key](https://www.alphavantage.co/support/#api-key)
 - Add your key to a `.env.local` file in the `client/` directory:
   ```env
-  NEXT_PUBLIC_ALPHA_VANTAGE_KEY=your_api_key_here
+  ALPHA_VANTAGE_KEY=your_api_key_here
   ```
 
 ### 3. Run the development server
